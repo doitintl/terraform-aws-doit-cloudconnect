@@ -32,3 +32,13 @@ output "support_gateway_role_arn" {
   description = "ARN of the DoiT Support Gateway role (Expert Advice feature)"
   value       = local.expert_advice_enabled ? aws_iam_role.support_gateway[0].arn : null
 }
+
+output "cloudconnect_time_linked" {
+  description = "ISO 8601 timestamp returned by DoiT when the CloudConnect account was linked"
+  value       = doit_cloudconnect_aws_account.this.time_linked
+}
+
+output "cloudconnect_supported_features" {
+  description = "Supported DCI features and permission status returned by DoiT"
+  value       = doit_cloudconnect_aws_account.this.supported_features
+}

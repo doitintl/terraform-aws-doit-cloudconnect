@@ -4,14 +4,14 @@
 # -----------------------------------------------------------
 
 locals {
-  expert_advice_enabled = contains(var.additional_features, "expert_advice")
+  expert_advice_enabled = contains(local.additional_feature_ids, "expert-advice")
 }
 
 # --- OIDC Provider: DoiT Support CRE ---
 resource "aws_iam_openid_connect_provider" "support_cre" {
   count = local.expert_advice_enabled ? 1 : 0
 
-  url             = "https://support-staging.cre.doit-intl.com"
+  url             = "https://support.cre.doit-intl.com"
   client_id_list  = [var.account_id]
   thumbprint_list = ["15c2b40aa2f322798666a6b332aaa03a6773019b", "08745487e891c19e3078c1f2a07e452950ef36f6"]
 
@@ -25,8 +25,8 @@ resource "aws_iam_openid_connect_provider" "support_cre" {
 resource "aws_iam_openid_connect_provider" "concedefy" {
   count = local.expert_advice_enabled ? 1 : 0
 
-  url             = "https://securetoken.google.com/concedefy-oidc-staging"
-  client_id_list  = ["concedefy-oidc-staging"]
+  url             = "https://securetoken.google.com/doit-support"
+  client_id_list  = ["doit-support"]
   thumbprint_list = ["08745487e891c19e3078c1f2a07e452950ef36f6"]
 
   tags = {
@@ -55,8 +55,8 @@ resource "aws_iam_role" "support_gateway" {
       Action = ["sts:AssumeRoleWithWebIdentity", "sts:TagSession"]
       Condition = {
         StringEqualsIfExists = {
-          "securetoken.google.com/concedefy-oidc-staging:aud" = "concedefy-oidc-staging"
-          "support-staging.cre.doit-intl.com:aud"             = var.account_id
+          "securetoken.google.com/doit-support:aud" = "doit-support"
+          "support.cre.doit-intl.com:aud"           = var.account_id
         }
         "ForAllValues:StringEquals" = {
           "sts:TransitiveTagKeys" = ["DoitEnvironment"]

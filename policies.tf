@@ -1,12 +1,33 @@
 locals {
-  role_name          = "doitintl_dci_cloudconnect"
-  final_feature_list = distinct(concat(["core"], var.additional_features))
+  role_name = "doitintl_dci_cloudconnect"
+  feature_name_to_id = {
+    "fsk8s_auto_connect"                              = "fsk8s_auto_connect"
+    "ps4commitment_core"                              = "ps4commitment_core"
+    "ps4commitment_purchase"                          = "ps4commitment_purchase"
+    "spot-scaling"                                    = "spot-scaling"
+    "real-time-data"                                  = "real-time-data"
+    "composer"                                        = "composer"
+    "expert_advice"                                   = "expert-advice"
+    "perfectscale for spot"                           = "spot-scaling"
+    "kubernetes auto connect clusters"                = "fsk8s_auto_connect"
+    "perfectscale for commitments - read & recommend" = "ps4commitment_core"
+    "perfectscale for commitments - purchases"        = "ps4commitment_purchase"
+    "real-time anomalies"                             = "real-time-data"
+    "dci composer"                                    = "composer"
+    "expert advice"                                   = "expert-advice"
+  }
+  additional_feature_ids = distinct([
+    for feature in var.additional_features :
+    local.feature_name_to_id[lower(trimspace(feature))]
+  ])
+  final_feature_list            = distinct(concat(["core"], local.additional_feature_ids))
+  cloudconnect_enabled_features = local.additional_feature_ids
 
   # ---------------------------------------------------------
   # Feature categorization
   # ---------------------------------------------------------
-  write_feature_names = ["fsk8s", "ps4_commitment_core", "ps4_commitment_purchase", "spot_scaling"]
-  has_write_features  = length(setintersection(toset(var.additional_features), toset(local.write_feature_names))) > 0
+  write_feature_names = ["fsk8s_auto_connect", "ps4commitment_core", "ps4commitment_purchase", "spot-scaling"]
+  has_write_features  = length(setintersection(toset(local.additional_feature_ids), toset(local.write_feature_names))) > 0
 
   # ---------------------------------------------------------
   # Core policy — all read-only permissions, always attached.
@@ -89,18 +110,18 @@ locals {
   # Source: dev member.yml WritePermissionPolicy
   # ---------------------------------------------------------
   feature_write_actions = {
-    fsk8s = [
+    fsk8s_auto_connect = [
       "eks:CreateAccessEntry",
       "eks:AssociateAccessPolicy",
       "eks:DisassociateAccessPolicy",
     ]
-    ps4_commitment_purchase = [
+    ps4commitment_purchase = [
       "savingsplans:CreateSavingsPlan",
       "savingsplans:ReturnSavingsPlan",
       "savingsplans:DeleteQueuedSavingsPlan",
       "savingsplans:TagResource",
     ]
-    spot_scaling = [
+    spot-scaling = [
       "autoscaling:AttachInstances",
       "autoscaling:BatchDeleteScheduledAction",
       "autoscaling:BatchPutScheduledUpdateGroupAction",
@@ -121,14 +142,14 @@ locals {
       "events:PutTargets",
       "iam:PassRole",
     ]
-    ps4_commitment_core = [
+    ps4commitment_core = [
       "ce:StartCommitmentPurchaseAnalysis",
     ]
   }
 
   # Combined write actions from all selected features
   wildcard_write_actions = flatten([
-    for feature in var.additional_features :
+    for feature in local.additional_feature_ids :
     lookup(local.feature_write_actions, feature, [])
   ])
 
@@ -152,7 +173,10 @@ locals {
   # RealTimeData policy — resource-scoped S3 + KMS access.
   # Source: dev member.yml RealTimeDataPolicy
   # ---------------------------------------------------------
-  real_time_data_bucket_name = lookup(lookup(var.feature_config, "real_time_data", {}), "bucket_name", "")
+  real_time_data_enabled       = contains(local.additional_feature_ids, "real-time-data")
+  real_time_data_config        = lookup(var.feature_config, "real-time-data", {})
+  real_time_data_bucket_name   = lookup(local.real_time_data_config, "bucket_name", "")
+  real_time_data_bucket_region = lookup(local.real_time_data_config, "bucket_region", "")
 
   real_time_data_policy = jsonencode({
     Version = "2012-10-17"

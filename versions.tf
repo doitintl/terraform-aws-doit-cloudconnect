@@ -4,11 +4,15 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 6.50"
     }
-    http = {
-      source  = "hashicorp/http"
-      version = "~> 3.0"
+    doit = {
+      source  = "doitintl/doit"
+      version = ">= 1.5.0"
+    }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.13"
     }
   }
 }

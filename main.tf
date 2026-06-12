@@ -21,7 +21,7 @@ resource "aws_iam_role" "doit_role" {
   tags = {
     ManagedBy = "terraform"
     Purpose   = "DoiT-CloudConnect"
-    Features  = join(",", local.final_feature_list)
+    Features  = join("+", local.final_feature_list)
   }
 }
 
@@ -86,7 +86,7 @@ resource "aws_iam_role_policy_attachment" "write" {
 
 # RealTimeData policy — only when real_time_data feature is selected
 resource "aws_iam_policy" "real_time_data" {
-  count = contains(var.additional_features, "real_time_data") ? 1 : 0
+  count = local.real_time_data_enabled ? 1 : 0
 
   name        = "${local.role_name}-real-time-data"
   description = "DoiT RealTimeData S3 and KMS permissions. Managed by terraform-doit-module."
@@ -100,13 +100,18 @@ resource "aws_iam_policy" "real_time_data" {
   lifecycle {
     precondition {
       condition     = local.real_time_data_bucket_name != ""
-      error_message = "feature_config.real_time_data.bucket_name is required when real_time_data feature is enabled."
+      error_message = "feature_config.real-time-data.bucket_name is required when real-time-data feature is enabled."
+    }
+
+    precondition {
+      condition     = local.real_time_data_bucket_region != ""
+      error_message = "feature_config.real-time-data.bucket_region is required when real-time-data feature is enabled."
     }
   }
 }
 
 resource "aws_iam_role_policy_attachment" "real_time_data" {
-  count = contains(var.additional_features, "real_time_data") ? 1 : 0
+  count = local.real_time_data_enabled ? 1 : 0
 
   role       = aws_iam_role.doit_role.name
   policy_arn = aws_iam_policy.real_time_data[0].arn
@@ -114,7 +119,7 @@ resource "aws_iam_role_policy_attachment" "real_time_data" {
 
 # Composer policy — only when composer feature is selected
 resource "aws_iam_policy" "composer" {
-  count = contains(var.additional_features, "composer") ? 1 : 0
+  count = contains(local.additional_feature_ids, "composer") ? 1 : 0
 
   name        = "${local.role_name}-composer"
   description = "DoiT Composer read-only permissions. Managed by terraform-doit-module."
@@ -127,7 +132,7 @@ resource "aws_iam_policy" "composer" {
 }
 
 resource "aws_iam_role_policy_attachment" "composer" {
-  count = contains(var.additional_features, "composer") ? 1 : 0
+  count = contains(local.additional_feature_ids, "composer") ? 1 : 0
 
   role       = aws_iam_role.doit_role.name
   policy_arn = aws_iam_policy.composer[0].arn
@@ -144,22 +149,10 @@ resource "aws_iam_role_policy_attachment" "aws_managed" {
 }
 
 # -----------------------------------------------------------
-# 5. Webhook — notify DoiT backend after role is ready
+# 5. Notify DoiT backend — register role and activate features
 # -----------------------------------------------------------
-data "http" "webhook" {
-  url    = "https://me-doit-intl-com.uc.r.appspot.com/webhooks/v1/aws/updateAccountRole"
-  method = "POST"
-
-  request_headers = {
-    Content-Type  = "application/json"
-    Authorization = "Bearer ${var.api_key}"
-  }
-
-  request_body = jsonencode({
-    account_id  = var.account_id
-    role_arn    = aws_iam_role.doit_role.arn
-    external_id = var.external_id
-  })
+resource "time_sleep" "iam_propagation" {
+  create_duration = "20s"
 
   depends_on = [
     aws_iam_role_policy.partner_access,
@@ -168,6 +161,7 @@ data "http" "webhook" {
     aws_iam_role_policy_attachment.real_time_data,
     aws_iam_role_policy_attachment.composer,
     aws_iam_role_policy_attachment.aws_managed,
+    aws_s3_bucket_notification.real_time_data,
     aws_iam_role.asg_opt,
     aws_iam_role_policy.asg_opt,
     aws_iam_role.support_gateway,
@@ -176,11 +170,14 @@ data "http" "webhook" {
     aws_iam_role.support_diagnostics,
     aws_iam_role_policy_attachment.support_diagnostics,
   ]
+}
 
-  lifecycle {
-    postcondition {
-      condition     = self.status_code == 200
-      error_message = "Webhook notification to DoiT backend failed with status ${self.status_code}."
-    }
-  }
+resource "doit_cloudconnect_aws_account" "this" {
+  account_id       = var.account_id
+  role_arn         = aws_iam_role.doit_role.arn
+  enabled_features = local.cloudconnect_enabled_features
+  s3bucket         = local.real_time_data_enabled ? local.real_time_data_bucket_name : null
+  s3bucket_region  = local.real_time_data_enabled ? local.real_time_data_bucket_region : null
+
+  depends_on = [time_sleep.iam_propagation]
 }
