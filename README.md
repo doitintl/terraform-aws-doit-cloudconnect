@@ -25,6 +25,20 @@ Terraform module for connecting AWS accounts with DoiT Cloud Intelligence (DCI) 
 
 Pass the customer feature names in `additional_features`. The module maps them to the backend IDs shown above when registering the account with DoiT CloudConnect.
 
+## Prerequisites
+
+- AWS credentials with permission to create IAM resources and configure S3 bucket notifications for Real-time anomalies
+- External ID from the DoiT Console
+- DoiT API key for the DoiT Terraform provider
+
+Provide the DoiT API key through the `DOIT_API_TOKEN` environment variable:
+
+```shell
+export DOIT_API_TOKEN="..."
+```
+
+Do not pass the DoiT API key to this module. The module uses the configured `doit` provider to register the account with DoiT CloudConnect.
+
 ## Usage
 
 ### Read-only (no additional features)
@@ -103,7 +117,7 @@ module "doit_cloudconnect" {
 | DoiT provider | >= 1.5.0 |
 | Time provider | ~> 0.13 |
 
-The root Terraform configuration using this module must configure the DoiT provider, preferably with `DOIT_API_TOKEN`:
+The root Terraform configuration using this module must configure the DoiT provider. Prefer `DOIT_API_TOKEN` instead of hardcoding the API key:
 
 ```hcl
 terraform {
@@ -120,6 +134,19 @@ terraform {
 }
 
 provider "doit" {}
+```
+
+Alternatively, configure the provider with a sensitive Terraform variable:
+
+```hcl
+variable "doit_api_token" {
+  type      = string
+  sensitive = true
+}
+
+provider "doit" {
+  api_token = var.doit_api_token
+}
 ```
 
 ## License
