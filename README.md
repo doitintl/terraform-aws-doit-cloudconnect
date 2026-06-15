@@ -99,7 +99,7 @@ module "doit_cloudconnect" {
 | Name | Version |
 |------|---------|
 | Terraform | >= 1.3 |
-| AWS provider | ~> 6.55.0 |
+| AWS provider | ~> 6.50 |
 | DoiT provider | >= 1.5.0 |
 | Time provider | ~> 0.13 |
 
@@ -110,7 +110,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 6.55.0"
+      version = "~> 6.50"
     }
     doit = {
       source  = "doitintl/doit"
