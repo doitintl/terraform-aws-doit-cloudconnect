@@ -148,6 +148,16 @@ resource "aws_iam_role_policy_attachment" "aws_managed" {
   policy_arn = each.value
 }
 
+# Reflex read-only deep-dive — only when the reflex feature is selected.
+# SecurityAudit is already attached via aws_managed; this adds the rest of
+# the read-only ceiling (ReadOnlyAccess + AWSSupportAccess).
+resource "aws_iam_role_policy_attachment" "reflex" {
+  for_each = local.reflex_enabled ? local.reflex_managed_policy_arns : {}
+
+  role       = aws_iam_role.doit_role.name
+  policy_arn = each.value
+}
+
 # -----------------------------------------------------------
 # 5. Notify DoiT backend — register role and activate features
 # -----------------------------------------------------------
@@ -161,6 +171,7 @@ resource "time_sleep" "iam_propagation" {
     aws_iam_role_policy_attachment.real_time_data,
     aws_iam_role_policy_attachment.composer,
     aws_iam_role_policy_attachment.aws_managed,
+    aws_iam_role_policy_attachment.reflex,
     aws_s3_bucket_notification.real_time_data,
     aws_iam_role.asg_opt,
     aws_iam_role_policy.asg_opt,
