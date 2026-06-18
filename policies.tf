@@ -15,6 +15,7 @@ locals {
     "real-time anomalies"                             = "real-time-data"
     "dci composer"                                    = "composer"
     "expert advice"                                   = "expert-advice"
+    "reflex"                                          = "reflex"
   }
   additional_feature_ids = distinct([
     for feature in var.additional_features :
@@ -348,6 +349,17 @@ locals {
     SecurityAudit                 = "arn:aws:iam::aws:policy/SecurityAudit"
     AWSSavingsPlansReadOnlyAccess = "arn:aws:iam::aws:policy/AWSSavingsPlansReadOnlyAccess"
     Billing                       = "arn:aws:iam::aws:policy/job-function/Billing"
+  }
+
+  # ---------------------------------------------------------
+  # Reflex feature — AWS managed read-only policies, attached
+  # only when the "reflex" feature is enabled. SecurityAudit is
+  # already always-on via aws_managed_policy_arns above.
+  # ---------------------------------------------------------
+  reflex_enabled = contains(local.additional_feature_ids, "reflex")
+  reflex_managed_policy_arns = {
+    ReadOnlyAccess   = "arn:aws:iam::aws:policy/ReadOnlyAccess"
+    AWSSupportAccess = "arn:aws:iam::aws:policy/AWSSupportAccess"
   }
 
   # ---------------------------------------------------------

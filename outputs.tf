@@ -25,7 +25,10 @@ output "custom_policy_arns" {
 
 output "aws_managed_policy_arns" {
   description = "List of AWS managed policy ARNs attached to the role"
-  value       = values(local.aws_managed_policy_arns)
+  value = concat(
+    values(local.aws_managed_policy_arns),
+    local.reflex_enabled ? values(local.reflex_managed_policy_arns) : [],
+  )
 }
 
 output "support_gateway_role_arn" {

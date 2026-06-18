@@ -52,9 +52,10 @@ variable "additional_features" {
         "real-time anomalies",
         "dci composer",
         "expert advice",
+        "reflex",
       ]), lower(trimspace(f)))
     ])
-    error_message = "Invalid feature name. Valid features: PerfectScale for Spot, Kubernetes auto connect clusters, PerfectScale for Commitments - Read & Recommend, PerfectScale for Commitments - Purchases, Real-time anomalies, DCI Composer, Expert Advice. Backend IDs are also accepted."
+    error_message = "Invalid feature name. Valid features: PerfectScale for Spot, Kubernetes auto connect clusters, PerfectScale for Commitments - Read & Recommend, PerfectScale for Commitments - Purchases, Real-time anomalies, DCI Composer, Expert Advice, Reflex. Backend IDs are also accepted."
   }
 }
 
