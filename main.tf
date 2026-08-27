@@ -175,6 +175,12 @@ resource "aws_iam_role_policy_attachment" "aws_managed" {
 resource "time_sleep" "iam_propagation" {
   create_duration = "20s"
 
+  # depends_on only orders the delay. Without a trigger the delay does not re-run
+  # when the reflex policy changes, and the backend registration would not wait.
+  triggers = {
+    reflex_policy = local.reflex_enabled ? sha256(local.reflex_policy) : ""
+  }
+
   depends_on = [
     aws_iam_role_policy.partner_access,
     aws_iam_role_policy_attachment.core,
