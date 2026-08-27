@@ -20,15 +20,13 @@ output "custom_policy_arns" {
     local.has_write_features ? { write = aws_iam_policy.write[0].arn } : {},
     length(aws_iam_policy.real_time_data) > 0 ? { real_time_data = aws_iam_policy.real_time_data[0].arn } : {},
     length(aws_iam_policy.composer) > 0 ? { composer = aws_iam_policy.composer[0].arn } : {},
+    length(aws_iam_policy.reflex) > 0 ? { reflex = aws_iam_policy.reflex[0].arn } : {},
   )
 }
 
 output "aws_managed_policy_arns" {
   description = "List of AWS managed policy ARNs attached to the role"
-  value = concat(
-    values(local.aws_managed_policy_arns),
-    local.reflex_enabled ? values(local.reflex_managed_policy_arns) : [],
-  )
+  value       = values(local.aws_managed_policy_arns)
 }
 
 output "support_gateway_role_arn" {

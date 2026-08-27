@@ -138,21 +138,32 @@ resource "aws_iam_role_policy_attachment" "composer" {
   policy_arn = aws_iam_policy.composer[0].arn
 }
 
+# Reflex policy — only when reflex feature is selected
+resource "aws_iam_policy" "reflex" {
+  count = local.reflex_enabled ? 1 : 0
+
+  name        = "${local.role_name}-reflex"
+  description = "DoiT Reflex metadata-only read permissions. Managed by terraform-doit-module."
+  policy      = local.reflex_policy
+
+  tags = {
+    ManagedBy  = "terraform"
+    PolicyType = "reflex"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "reflex" {
+  count = local.reflex_enabled ? 1 : 0
+
+  role       = aws_iam_role.doit_role.name
+  policy_arn = aws_iam_policy.reflex[0].arn
+}
+
 # -----------------------------------------------------------
 # 4. AWS managed policies — always attached
 # -----------------------------------------------------------
 resource "aws_iam_role_policy_attachment" "aws_managed" {
   for_each = local.aws_managed_policy_arns
-
-  role       = aws_iam_role.doit_role.name
-  policy_arn = each.value
-}
-
-# Reflex read-only deep-dive — only when the reflex feature is selected.
-# SecurityAudit is already attached via aws_managed; this adds the rest of
-# the read-only ceiling (ReadOnlyAccess + AWSSupportAccess).
-resource "aws_iam_role_policy_attachment" "reflex" {
-  for_each = local.reflex_enabled ? local.reflex_managed_policy_arns : {}
 
   role       = aws_iam_role.doit_role.name
   policy_arn = each.value
