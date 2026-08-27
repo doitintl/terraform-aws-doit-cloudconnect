@@ -138,6 +138,27 @@ resource "aws_iam_role_policy_attachment" "composer" {
   policy_arn = aws_iam_policy.composer[0].arn
 }
 
+# Reflex policy — only when reflex feature is selected
+resource "aws_iam_policy" "reflex" {
+  count = local.reflex_enabled ? 1 : 0
+
+  name        = "${local.role_name}-reflex"
+  description = "DoiT Reflex metadata-only read permissions. Managed by terraform-doit-module."
+  policy      = local.reflex_policy
+
+  tags = {
+    ManagedBy  = "terraform"
+    PolicyType = "reflex"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "reflex" {
+  count = local.reflex_enabled ? 1 : 0
+
+  role       = aws_iam_role.doit_role.name
+  policy_arn = aws_iam_policy.reflex[0].arn
+}
+
 # -----------------------------------------------------------
 # 4. AWS managed policies — always attached
 # -----------------------------------------------------------
@@ -148,21 +169,17 @@ resource "aws_iam_role_policy_attachment" "aws_managed" {
   policy_arn = each.value
 }
 
-# Reflex read-only deep-dive — only when the reflex feature is selected.
-# SecurityAudit is already attached via aws_managed; this adds the rest of
-# the read-only ceiling (ReadOnlyAccess + AWSSupportAccess).
-resource "aws_iam_role_policy_attachment" "reflex" {
-  for_each = local.reflex_enabled ? local.reflex_managed_policy_arns : {}
-
-  role       = aws_iam_role.doit_role.name
-  policy_arn = each.value
-}
-
 # -----------------------------------------------------------
 # 5. Notify DoiT backend — register role and activate features
 # -----------------------------------------------------------
 resource "time_sleep" "iam_propagation" {
   create_duration = "20s"
+
+  # depends_on only orders the delay. Without a trigger the delay does not re-run
+  # when the reflex policy changes, and the backend registration would not wait.
+  triggers = {
+    reflex_policy = local.reflex_enabled ? sha256(local.reflex_policy) : ""
+  }
 
   depends_on = [
     aws_iam_role_policy.partner_access,
