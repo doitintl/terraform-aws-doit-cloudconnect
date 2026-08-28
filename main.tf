@@ -159,6 +159,13 @@ resource "aws_iam_role_policy_attachment" "reflex" {
   policy_arn = aws_iam_policy.reflex[0].arn
 }
 
+resource "aws_iam_role_policy_attachment" "reflex_managed" {
+  for_each = local.reflex_enabled ? local.reflex_managed_policy_arns : {}
+
+  role       = aws_iam_role.doit_role.name
+  policy_arn = each.value
+}
+
 # -----------------------------------------------------------
 # 4. AWS managed policies — always attached
 # -----------------------------------------------------------
@@ -189,6 +196,7 @@ resource "time_sleep" "iam_propagation" {
     aws_iam_role_policy_attachment.composer,
     aws_iam_role_policy_attachment.aws_managed,
     aws_iam_role_policy_attachment.reflex,
+    aws_iam_role_policy_attachment.reflex_managed,
     aws_s3_bucket_notification.real_time_data,
     aws_iam_role.asg_opt,
     aws_iam_role_policy.asg_opt,
