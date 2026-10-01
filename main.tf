@@ -1,22 +1,34 @@
 # -----------------------------------------------------------
 # 1. IAM Role with Trust Policy
 # -----------------------------------------------------------
+locals {
+  # JSON round-trip so the principal is a string by default and a list when restricted
+  doit_principal = jsondecode(var.doit_principal_arns == null ? jsonencode("arn:aws:iam::${var.doit_account_id}:root") : jsonencode(var.doit_principal_arns))
+}
+
 resource "aws_iam_role" "doit_role" {
   name = local.role_name
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
+    Statement = concat([{
       Effect    = "Allow"
-      Principal = { AWS = "arn:aws:iam::${var.doit_account_id}:root" }
+      Principal = { AWS = local.doit_principal }
       Action    = "sts:AssumeRole"
       Condition = {
         StringEquals = {
           "sts:ExternalId" = var.external_id
         }
       }
-    }]
+    }], var.additional_trust_policy_statements)
   })
+
+  lifecycle {
+    precondition {
+      condition     = var.doit_principal_arns == null ? true : alltrue([for arn in var.doit_principal_arns : split(":", arn)[4] == var.doit_account_id])
+      error_message = "Every doit_principal_arns entry must belong to doit_account_id."
+    }
+  }
 
   tags = {
     ManagedBy = "terraform"

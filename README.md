@@ -86,6 +86,31 @@ module "doit_cloudconnect" {
 }
 ```
 
+### Custom trust policy
+
+Restrict the trust policy to specific IAM roles in the DoiT account instead of the whole account, and/or add further trust statements (for example a time-boxed one). Either input works on its own:
+
+```hcl
+module "doit_cloudconnect" {
+  source = "github.com/doitintl/terraform-aws-doit-cloudconnect"
+
+  external_id = var.doit_external_id
+  account_id  = "123456789012"
+
+  doit_principal_arns = ["arn:aws:iam::068664126052:role/example-role"]
+
+  additional_trust_policy_statements = [{
+    Effect    = "Allow"
+    Principal = { AWS = "arn:aws:iam::111111111111:role/example-other-role" }
+    Action    = "sts:AssumeRole"
+    Condition = {
+      StringEquals = { "sts:ExternalId" = var.doit_external_id }
+      DateLessThan = { "aws:CurrentTime" = "2026-12-31T00:00:00Z" }
+    }
+  }]
+}
+```
+
 ## Inputs
 
 | Name                  | Description                                                                                                              | Type               | Default          | Required | Sensitive |
@@ -93,6 +118,8 @@ module "doit_cloudconnect" {
 | `external_id`         | External ID from DoiT Console for trust policy                                                                           | `string`           | —                | yes      | yes       |
 | `account_id`          | Customer AWS Account ID (12 digits)                                                                                      | `string`           | —                | yes      | no        |
 | `doit_account_id`     | DoiT AWS account ID for trust policy                                                                                     | `string`           | `"068664126052"` | no       | no        |
+| `doit_principal_arns` | Restricts the trust policy to these DoiT IAM role ARNs (must be in `doit_account_id`) instead of the account root | `list(string)` | `null` | no | no |
+| `additional_trust_policy_statements` | Extra IAM statements appended to the role trust policy | `any` | `[]` | no | no |
 | `additional_features` | Customer feature names to enable. The module maps them to DoiT backend feature IDs.                                      | `list(string)`     | `[]`             | no       | no        |
 | `feature_config`      | Per-feature configuration map. Real-time anomalies uses the `real-time-data` key with `bucket_name` and `bucket_region`. | `map(map(string))` | `{}`             | no       | no        |
 

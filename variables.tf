@@ -30,6 +30,23 @@ variable "doit_account_id" {
   }
 }
 
+variable "doit_principal_arns" {
+  description = "Restricts the trust policy to these DoiT IAM principals (e.g. a specific role) instead of the entire doit_account_id root. Must be in doit_account_id. Null keeps the account root."
+  type        = list(string)
+  default     = null
+
+  validation {
+    condition     = var.doit_principal_arns == null ? true : length(var.doit_principal_arns) > 0 && alltrue([for arn in var.doit_principal_arns : can(regex("^arn:aws:iam::\\d{12}:(root|role/.+)$", arn))])
+    error_message = "doit_principal_arns must be null or a non-empty list of IAM role or account root ARNs."
+  }
+}
+
+variable "additional_trust_policy_statements" {
+  description = "Extra statements appended to the role trust policy, as IAM policy statement objects."
+  type        = any
+  default     = []
+}
+
 variable "additional_features" {
   description = "List of optional DCI features to enable. Customer-facing feature names are mapped to backend feature IDs. 'core' is always included automatically."
   type        = list(string)
