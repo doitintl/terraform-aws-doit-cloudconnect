@@ -122,6 +122,8 @@ locals {
       "savingsplans:DeleteQueuedSavingsPlan",
       "savingsplans:TagResource",
     ]
+    # Unscoped by design: Spot Scaling re-launches instances using each customer ASG's existing
+    # instance profile, so PassRole and RunInstances can't be limited to known roles or tags.
     spot-scaling = [
       "autoscaling:AttachInstances",
       "autoscaling:BatchDeleteScheduledAction",

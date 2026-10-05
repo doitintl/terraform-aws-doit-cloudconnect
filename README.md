@@ -26,6 +26,12 @@ Terraform module for connecting AWS accounts with DoiT Cloud Intelligence (DCI) 
 
 Pass the customer feature names in `additional_features`. The module maps them to the backend IDs shown above when registering the account with DoiT CloudConnect.
 
+### Spot Scaling permissions
+
+`PerfectScale for Spot` grants `iam:PassRole`, `ec2:RunInstances` and `ec2:TerminateInstances` on all resources. This is intentional: the feature converts your existing Auto Scaling groups and launches instances with the instance profiles they already use. Those roles and ASGs are yours, so they can't be enumerated in advance or restricted by DoiT-managed tags.
+
+The role can only be assumed by DoiT's AWS account with your external ID, and the feature is opt-in. Leave `PerfectScale for Spot` out of `additional_features` if you don't want to grant these permissions.
+
 ## Prerequisites
 
 - AWS credentials with permission to create IAM resources and configure S3 bucket notifications for Real-time anomalies
