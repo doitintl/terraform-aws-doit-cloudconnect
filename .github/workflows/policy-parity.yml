@@ -23,11 +23,8 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install dependencies
-        run: pip install --require-hashes -r scripts/requirements.txt
-
       - name: Terraform init
         run: terraform init -backend=false -input=false
 
       - name: Compare policies with the CloudFormation member template
-        run: python scripts/check_policy_parity.py
+        run: scripts/check-policy-parity.sh
