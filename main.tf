@@ -150,6 +150,27 @@ resource "aws_iam_role_policy_attachment" "composer" {
   policy_arn = aws_iam_policy.composer[0].arn
 }
 
+# Attribute policy — only when attribute feature is selected
+resource "aws_iam_policy" "attribute" {
+  count = contains(local.additional_feature_ids, "attribute") ? 1 : 0
+
+  name        = "${local.role_name}-attribute"
+  description = "DoiT Attribute read-only permissions. Managed by terraform-doit-module."
+  policy      = local.attribute_policy
+
+  tags = {
+    ManagedBy  = "terraform"
+    PolicyType = "attribute"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "attribute" {
+  count = contains(local.additional_feature_ids, "attribute") ? 1 : 0
+
+  role       = aws_iam_role.doit_role.name
+  policy_arn = aws_iam_policy.attribute[0].arn
+}
+
 # Reflex policy — only when reflex feature is selected
 resource "aws_iam_policy" "reflex" {
   count = local.reflex_enabled ? 1 : 0
@@ -206,6 +227,7 @@ resource "time_sleep" "iam_propagation" {
     aws_iam_role_policy_attachment.write,
     aws_iam_role_policy_attachment.real_time_data,
     aws_iam_role_policy_attachment.composer,
+    aws_iam_role_policy_attachment.attribute,
     aws_iam_role_policy_attachment.aws_managed,
     aws_iam_role_policy_attachment.reflex,
     aws_iam_role_policy_attachment.reflex_managed,

@@ -1,0 +1,31 @@
+name: Policy parity
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  policy-parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+          terraform_wrapper: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install pyyaml==6.0.2
+
+      - name: Terraform init
+        run: terraform init -backend=false -input=false
+
+      - name: Compare policies with the CloudFormation member template
+        run: python scripts/check_policy_parity.py
