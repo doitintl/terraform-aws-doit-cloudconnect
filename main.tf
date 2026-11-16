@@ -155,7 +155,7 @@ resource "aws_iam_policy" "attribute" {
   count = contains(local.additional_feature_ids, "attribute") ? 1 : 0
 
   name        = "${local.role_name}-attribute"
-  description = "DoiT Attribute read-only permissions. Managed by terraform-doit-module."
+  description = "DoiT Attribute permissions: read access plus Cost Explorer actions. Managed by terraform-doit-module."
   policy      = local.attribute_policy
 
   tags = {

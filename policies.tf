@@ -347,15 +347,17 @@ locals {
   })
 
   # ---------------------------------------------------------
-  # Attribute policy — read-only access for Attribute cost and
-  # resource utilization analysis.
+  # Attribute policy — read access for Attribute cost and resource
+  # utilization analysis, plus Cost Explorer actions that change
+  # account state (cost allocation tag activation and Savings Plans
+  # recommendation generation).
   # Source: member.yml AttributePolicy
   # ---------------------------------------------------------
   attribute_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "AttributeReadOnly"
+        Sid    = "AttributeRead"
         Effect = "Allow"
         Action = [
           "aoss:List*",
@@ -364,8 +366,6 @@ locals {
           "bedrock:List*",
           "ce:Get*",
           "ce:List*",
-          "ce:StartSavingsPlansPurchaseRecommendationGeneration",
-          "ce:UpdateCostAllocationTagsStatus",
           "cloudwatch:GetMetricData",
           "cost-optimization-hub:ListRecommendations",
           "dynamodb:Describe*",
@@ -409,6 +409,15 @@ locals {
           "s3:GetInventoryConfiguration",
           "s3:GetLifecycleConfiguration",
           "s3:List*",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "AttributeCostExplorerUpdates"
+        Effect = "Allow"
+        Action = [
+          "ce:StartSavingsPlansPurchaseRecommendationGeneration",
+          "ce:UpdateCostAllocationTagsStatus",
         ]
         Resource = "*"
       }
