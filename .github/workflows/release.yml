@@ -1,0 +1,70 @@
+name: Release
+
+# Runs when a vX.Y.Z tag is pushed. The Terraform Registry publishes the tag on
+# its own, through its GitHub webhook; this workflow only creates the GitHub
+# Release from the CHANGELOG.md entry and checks that the Registry picked up
+# the version. See docs/release.md.
+
+on:
+  push:
+    tags:
+      - "v[0-9]*"
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The ancestry check below needs main's history.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate the tag
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Tag '$RELEASE_TAG' is not a valid semver tag (expected vX.Y.Z or vX.Y.Z-rc.N)"
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Tag '$RELEASE_TAG' points at a commit that is not on main"
+            exit 1
+          fi
+
+      - name: Extract release notes from CHANGELOG.md
+        run: scripts/release/extract-changelog.sh --tag "$RELEASE_TAG" > "$RUNNER_TEMP/release-notes.md"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=()
+          [[ "$RELEASE_TAG" == *-* ]] && flags+=(--prerelease)
+          gh release create "$RELEASE_TAG" \
+            --title "$RELEASE_TAG" \
+            --notes-file "$RUNNER_TEMP/release-notes.md" \
+            --verify-tag \
+            "${flags[@]}"
+
+      - name: Check the Terraform Registry
+        env:
+          MODULE: doitintl/doit-cloudconnect/aws
+        run: |
+          version="${RELEASE_TAG#v}"
+          url="https://registry.terraform.io/v1/modules/${MODULE}/${version}"
+          for _ in $(seq 1 20); do
+            if curl -fsS -o /dev/null "$url"; then
+              echo "Registry has ${MODULE} ${version}: https://registry.terraform.io/modules/${MODULE}/${version}"
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "::warning::${MODULE} ${version} is not on the Terraform Registry after 10 minutes. Use 'Resync module' on the Registry module page (see docs/release.md)."
