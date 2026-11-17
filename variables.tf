@@ -62,6 +62,8 @@ variable "additional_features" {
         "real-time-data",
         "composer",
         "expert_advice",
+        "expert-advice",
+        "attribute",
         "perfectscale for spot",
         "kubernetes auto connect clusters",
         "perfectscale for commitments - read & recommend",
@@ -72,7 +74,7 @@ variable "additional_features" {
         "reflex",
       ]), lower(trimspace(f)))
     ])
-    error_message = "Invalid feature name. Valid features: PerfectScale for Spot, Kubernetes auto connect clusters, PerfectScale for Commitments - Read & Recommend, PerfectScale for Commitments - Purchases, Real-time anomalies, DCI Composer, Expert Advice, Reflex. Backend IDs are also accepted."
+    error_message = "Invalid feature name. Valid features: PerfectScale for Spot, Kubernetes auto connect clusters, PerfectScale for Commitments - Read & Recommend, PerfectScale for Commitments - Purchases, Real-time anomalies, DCI Composer, Expert Advice, Reflex, Attribute. Backend IDs are also accepted."
   }
 }
 
@@ -80,4 +82,26 @@ variable "feature_config" {
   description = "Per-feature configuration. Required keys depend on the feature."
   type        = map(map(string))
   default     = {}
+}
+
+variable "expert_advice_support_oidc_host" {
+  description = "Host of the DoiT Support OIDC provider for Expert Advice. Null uses the DoiT production host. Override only when instructed by DoiT."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.expert_advice_support_oidc_host == null || can(regex("^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+doit-intl\\.com$", var.expert_advice_support_oidc_host))
+    error_message = "expert_advice_support_oidc_host must be a host name under doit-intl.com, without scheme, port or path."
+  }
+}
+
+variable "expert_advice_concedefy_audience" {
+  description = "Audience of the DoiT Concedefy OIDC provider for Expert Advice. Null uses the DoiT production audience. Override only when instructed by DoiT."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.expert_advice_concedefy_audience == null || can(regex("^[a-z][a-z0-9-]{4,28}[a-z0-9]$", var.expert_advice_concedefy_audience))
+    error_message = "expert_advice_concedefy_audience must be a project ID: 6-30 lowercase letters, digits or hyphens, starting with a letter."
+  }
 }

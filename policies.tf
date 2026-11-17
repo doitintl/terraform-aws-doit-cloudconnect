@@ -8,6 +8,8 @@ locals {
     "real-time-data"                                  = "real-time-data"
     "composer"                                        = "composer"
     "expert_advice"                                   = "expert-advice"
+    "expert-advice"                                   = "expert-advice"
+    "attribute"                                       = "attribute"
     "perfectscale for spot"                           = "spot-scaling"
     "kubernetes auto connect clusters"                = "fsk8s_auto_connect"
     "perfectscale for commitments - read & recommend" = "ps4commitment_core"
@@ -338,6 +340,84 @@ locals {
           "transfer:ListServers",
           "vpc-lattice:Get*",
           "vpc-lattice:List*",
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  # ---------------------------------------------------------
+  # Attribute policy — read access for Attribute cost and resource
+  # utilization analysis, plus Cost Explorer actions that change
+  # account state (cost allocation tag activation and Savings Plans
+  # recommendation generation).
+  # Source: member.yml AttributePolicy
+  # ---------------------------------------------------------
+  attribute_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AttributeRead"
+        Effect = "Allow"
+        Action = [
+          "aoss:List*",
+          "autoscaling:Describe*",
+          "bedrock:Get*",
+          "bedrock:List*",
+          "ce:Get*",
+          "ce:List*",
+          "cloudwatch:GetMetricData",
+          "cost-optimization-hub:ListRecommendations",
+          "dynamodb:Describe*",
+          "dynamodb:List*",
+          "ec2:Describe*",
+          "ec2:GetManagedPrefixListEntries",
+          "ec2:List*",
+          "ec2:SearchTransitGatewayRoutes",
+          "ecs:Describe*",
+          "ecs:List*",
+          "eks:Describe*",
+          "eks:List*",
+          "elasticache:Describe*",
+          "elasticache:List*",
+          "elasticfilesystem:Describe*",
+          "elasticfilesystem:List*",
+          "elasticloadbalancing:Describe*",
+          "elasticloadbalancing:List*",
+          "es:Describe*",
+          "es:List*",
+          "kafka:Describe*",
+          "kafka:Get*",
+          "kafka:List*",
+          "lambda:Describe*",
+          "lambda:List*",
+          "memorydb:Describe*",
+          "memorydb:List*",
+          "neptune-db:Describe*",
+          "neptune-db:List*",
+          "osis:List*",
+          "rds:Describe*",
+          "rds:List*",
+          "redshift:Describe*",
+          "redshift:List*",
+          "s3:Describe*",
+          "s3:GetBucketLocation",
+          "s3:GetBucketPolicy",
+          "s3:GetBucketTagging",
+          "s3:GetBucketVersioning",
+          "s3:GetIntelligentTieringConfiguration",
+          "s3:GetInventoryConfiguration",
+          "s3:GetLifecycleConfiguration",
+          "s3:List*",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "AttributeCostExplorerUpdates"
+        Effect = "Allow"
+        Action = [
+          "ce:StartSavingsPlansPurchaseRecommendationGeneration",
+          "ce:UpdateCostAllocationTagsStatus",
         ]
         Resource = "*"
       }

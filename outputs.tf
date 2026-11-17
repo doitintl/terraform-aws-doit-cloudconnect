@@ -20,6 +20,7 @@ output "custom_policy_arns" {
     local.has_write_features ? { write = aws_iam_policy.write[0].arn } : {},
     length(aws_iam_policy.real_time_data) > 0 ? { real_time_data = aws_iam_policy.real_time_data[0].arn } : {},
     length(aws_iam_policy.composer) > 0 ? { composer = aws_iam_policy.composer[0].arn } : {},
+    length(aws_iam_policy.attribute) > 0 ? { attribute = aws_iam_policy.attribute[0].arn } : {},
     length(aws_iam_policy.reflex) > 0 ? { reflex = aws_iam_policy.reflex[0].arn } : {},
   )
 }

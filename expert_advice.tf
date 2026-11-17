@@ -4,14 +4,17 @@
 # -----------------------------------------------------------
 
 locals {
-  expert_advice_enabled = contains(local.additional_feature_ids, "expert-advice")
+  expert_advice_enabled          = contains(local.additional_feature_ids, "expert-advice")
+  expert_advice_support_host     = coalesce(var.expert_advice_support_oidc_host, "support.cre.doit-intl.com")
+  expert_advice_concedefy_aud    = coalesce(var.expert_advice_concedefy_audience, "doit-support")
+  expert_advice_concedefy_issuer = "securetoken.google.com/${local.expert_advice_concedefy_aud}"
 }
 
 # --- OIDC Provider: DoiT Support CRE ---
 resource "aws_iam_openid_connect_provider" "support_cre" {
   count = local.expert_advice_enabled ? 1 : 0
 
-  url             = "https://support.cre.doit-intl.com"
+  url             = "https://${local.expert_advice_support_host}"
   client_id_list  = [var.account_id]
   thumbprint_list = ["15c2b40aa2f322798666a6b332aaa03a6773019b", "08745487e891c19e3078c1f2a07e452950ef36f6"]
 
@@ -25,8 +28,8 @@ resource "aws_iam_openid_connect_provider" "support_cre" {
 resource "aws_iam_openid_connect_provider" "concedefy" {
   count = local.expert_advice_enabled ? 1 : 0
 
-  url             = "https://securetoken.google.com/doit-support"
-  client_id_list  = ["doit-support"]
+  url             = "https://${local.expert_advice_concedefy_issuer}"
+  client_id_list  = [local.expert_advice_concedefy_aud]
   thumbprint_list = ["08745487e891c19e3078c1f2a07e452950ef36f6"]
 
   tags = {
@@ -55,8 +58,8 @@ resource "aws_iam_role" "support_gateway" {
       Action = ["sts:AssumeRoleWithWebIdentity", "sts:TagSession"]
       Condition = {
         StringEqualsIfExists = {
-          "securetoken.google.com/doit-support:aud" = "doit-support"
-          "support.cre.doit-intl.com:aud"           = var.account_id
+          "${local.expert_advice_concedefy_issuer}:aud" = local.expert_advice_concedefy_aud
+          "${local.expert_advice_support_host}:aud"     = var.account_id
         }
         "ForAllValues:StringEquals" = {
           "sts:TransitiveTagKeys" = ["DoitEnvironment"]

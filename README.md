@@ -7,7 +7,7 @@ Terraform module for connecting AWS accounts with DoiT Cloud Intelligence (DCI) 
 - Creates an IAM role with a trust policy allowing DoiT to assume it via `sts:AssumeRole` with an external ID
 - Attaches a **core** read-only managed policy (always present)
 - Attaches a **write** managed policy when write features are selected
-- Attaches feature-specific policies for **Composer**, **RealTimeData**, and **Expert Advice**
+- Attaches feature-specific policies for **Composer**, **RealTimeData**, **Attribute**, and **Expert Advice**
 - Attaches three AWS managed policies: `SecurityAudit`, `AWSSavingsPlansReadOnlyAccess`, `Billing`
 - Registers the account with DoiT CloudConnect after AWS resources are in place
 
@@ -23,6 +23,7 @@ Terraform module for connecting AWS accounts with DoiT Cloud Intelligence (DCI) 
 | `DCI Composer`                                    | `composer`               | separate policy                       | Broad read-only access for Composer                                                                                                                                                                                                                                   |
 | `Expert Advice`                                   | `expert-advice`          | separate resources                    | DoiT Support Gateway (OIDC providers, support roles)                                                                                                                                                                                                                  |
 | `Reflex`                                          | `reflex`                 | separate policy                       | Metadata-only read access for DoiT Reflex. AWS-managed `job-function/ViewOnlyAccess` and `AWSSupportAccess` (`SecurityAudit` already attached by core), plus a small policy for the reads they do not cover. Support write actions are denied.                        |
+| `Attribute`                                       | `attribute`              | separate policy                       | Read access for Attribute cost and resource utilization analysis, plus Cost Explorer actions. See [Attribute permissions](#attribute-permissions).                                                                                      |
 
 Pass the customer feature names in `additional_features`. The module maps them to the backend IDs shown above when registering the account with DoiT CloudConnect.
 
@@ -31,6 +32,28 @@ Pass the customer feature names in `additional_features`. The module maps them t
 `PerfectScale for Spot` grants `iam:PassRole`, `ec2:RunInstances` and `ec2:TerminateInstances` on all resources. This is intentional: the feature converts your existing Auto Scaling groups and launches instances with the instance profiles they already use. Those roles and ASGs are yours, so they can't be enumerated in advance or restricted by DoiT-managed tags.
 
 The role can only be assumed by DoiT's AWS account with your external ID, and the feature is opt-in. Leave `PerfectScale for Spot` out of `additional_features` if you don't want to grant these permissions.
+
+### Attribute permissions
+
+`Attribute` mostly reads data. Besides read access for cost and resource utilization analysis, it grants Cost Explorer actions that change account state:
+
+- `ce:UpdateCostAllocationTagsStatus` activates or deactivates cost allocation tags. Activated tags appear in your billing data from the time they are activated.
+- `ce:StartSavingsPlansPurchaseRecommendationGeneration` starts generating Savings Plans purchase recommendations. It does not purchase anything.
+
+Leave `Attribute` out of `additional_features` if you don't want to grant these permissions.
+
+### Managed policy quota
+
+IAM limits each role to 10 attached managed policies by default. Selecting every optional feature exceeds that limit. The module attaches:
+
+- always: the core policy plus `SecurityAudit`, `AWSSavingsPlansReadOnlyAccess` and `Billing`
+- one policy each for write features, `Real-time anomalies`, `DCI Composer` and `Attribute`
+- three for `Reflex`: its own policy plus `ViewOnlyAccess` and `AWSSupportAccess`
+
+The quota is only exceeded when write features, `Real-time anomalies`, `DCI
+Composer`, `Attribute` and `Reflex` are all selected. In that case, request an
+increase of the IAM **Managed policies per role** quota in Service Quotas
+before running `terraform apply`.
 
 ## Prerequisites
 
