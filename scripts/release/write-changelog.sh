@@ -62,15 +62,20 @@ get_commits_between() {
 
 categorize_commits() {
   local commits="$1"
-  local feats="" fixes="" chores="" others=""
+  local breaking="" feats="" fixes="" chores="" others=""
 
   while IFS= read -r line; do
     [[ -z "$line" ]] && continue
-    local hash msg
+    local hash msg body
     hash="$(echo "$line" | cut -d' ' -f1)"
     msg="$(echo "$line" | cut -d' ' -f2-)"
 
-    if [[ "$msg" =~ ^feat ]]; then
+    # Same rule as next-version.sh: a '!' after the type, or a BREAKING CHANGE
+    # trailer in the body.
+    body="$(git log -1 --format=%b "$hash")"
+    if [[ "$msg" =~ ^[a-z]+(\([^\)]*\))?!: ]] || grep -qE '^BREAKING[ -]CHANGE' <<< "$body"; then
+      breaking+="- ${msg} (\`${hash}\`)"$'\n'
+    elif [[ "$msg" =~ ^feat ]]; then
       feats+="- ${msg} (\`${hash}\`)"$'\n'
     elif [[ "$msg" =~ ^fix ]]; then
       fixes+="- ${msg} (\`${hash}\`)"$'\n'
@@ -83,6 +88,9 @@ categorize_commits() {
 
   local output=""
 
+  if [[ -n "$breaking" ]]; then
+    output+=$'\n'"### Breaking Changes"$'\n\n'"${breaking}"
+  fi
   if [[ -n "$feats" ]]; then
     output+=$'\n'"### Features"$'\n\n'"${feats}"
   fi

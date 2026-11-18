@@ -120,6 +120,11 @@ check_tag() {
     confirm_or_exit "No previous tag found. Release ${new_tag} as first release?"
   else
     info "previous tag: ${latest_tag}"
+    # Without commits there is no changelog entry, and the Release workflow
+    # fails on a tag without one. Stop before any file is changed.
+    if [[ -z "$(git -C "$REPO_ROOT" log "${latest_tag}..HEAD" --no-merges --format=%h)" ]]; then
+      die "no commits since ${latest_tag}: nothing to release."
+    fi
     confirm_or_exit "Changelog will cover from '${latest_tag}'. Continue?"
   fi
 }
