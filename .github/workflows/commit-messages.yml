@@ -6,12 +6,15 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
-  checkcommits:
+  check:
     name: Validate commit messages
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      passed: ${{ steps.checkcommits.outputs.passed }}
+      report: ${{ steps.checkcommits.outputs.report }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -21,27 +24,57 @@ jobs:
 
       - name: Check commit messages
         id: checkcommits
-        continue-on-error: true
         # --safe omits commit messages from output, printing only hashes.
         # This prevents untrusted commit messages from injecting special
-        # characters that could break shell expansion, base64 encoding,
-        # or the GitHub Actions expression context used downstream.
+        # characters into the PR comment.
         env:
           BASE_REF: ${{ github.base_ref }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          bash scripts/dev/check-commits.sh --safe "origin/${BASE_REF}" "$HEAD_SHA" 2>&1 | tee "$RUNNER_TEMP/checkcommits.txt"
-          rc=${PIPESTATUS[0]}
-          echo "output=$(base64 -w0 "$RUNNER_TEMP/checkcommits.txt")" >> "$GITHUB_OUTPUT"
-          exit "$rc"
+          rc=0
+          bash scripts/dev/check-commits.sh --safe "origin/${BASE_REF}" "$HEAD_SHA" > "$RUNNER_TEMP/checkcommits.txt" 2>&1 || rc=$?
+          cat "$RUNNER_TEMP/checkcommits.txt"
+          {
+            echo "passed=$([ "$rc" -eq 0 ] && echo true || echo false)"
+            echo "report=$(base64 -w0 "$RUNNER_TEMP/checkcommits.txt")"
+          } >> "$GITHUB_OUTPUT"
 
-      - name: Post failure comment
-        if: steps.checkcommits.outcome == 'failure' && github.event.pull_request.head.repo.fork == false
+  comment:
+    name: Update PR comment
+    needs: check
+    if: github.event.pull_request.head.repo.fork == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Post or remove the comment
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PASSED: ${{ needs.check.outputs.passed }}
+          REPORT: ${{ needs.check.outputs.report }}
         with:
           script: |
             const marker = '<!-- ci-checkcommits-mark -->';
-            const output = Buffer.from('${{ steps.checkcommits.outputs.output }}', 'base64').toString('utf8').replace(/`/g, '\\`');
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes(marker));
+
+            if (process.env.PASSED === 'true') {
+              if (existing) {
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existing.id,
+                });
+              }
+              return;
+            }
+
+            const output = Buffer.from(process.env.REPORT, 'base64').toString('utf8').replace(/`/g, '\\`');
             const body = [
               marker,
               '## Commit Message Lint Failed',
@@ -58,13 +91,6 @@ jobs:
               '</details>'
             ].join('\n');
 
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const existing = comments.find(c => c.body.includes(marker));
-
             if (existing) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
@@ -78,25 +104,5 @@ jobs:
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
                 body,
-              });
-            }
-
-      - name: Remove stale comment
-        if: steps.checkcommits.outcome == 'success' && github.event.pull_request.head.repo.fork == false
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          script: |
-            const marker = '<!-- ci-checkcommits-mark -->';
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const existing = comments.find(c => c.body.includes(marker));
-            if (existing) {
-              await github.rest.issues.deleteComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
               });
             }
