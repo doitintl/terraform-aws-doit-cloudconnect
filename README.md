@@ -1,6 +1,11 @@
 # terraform-aws-doit-cloudconnect
 
+[![Terraform Registry](https://img.shields.io/badge/terraform-registry-623CE4?logo=terraform)](https://registry.terraform.io/modules/doitintl/doit-cloudconnect/aws/latest)
+[![Tests](https://github.com/doitintl/terraform-aws-doit-cloudconnect/actions/workflows/tests.yml/badge.svg)](https://github.com/doitintl/terraform-aws-doit-cloudconnect/actions/workflows/tests.yml)
+
 Terraform module for connecting AWS accounts with DoiT Cloud Intelligence (DCI) features. Creates IAM resources in the customer's AWS account to grant DoiT cross-account access based on selected features.
+
+This module is published to the [Terraform Registry](https://registry.terraform.io/modules/doitintl/doit-cloudconnect/aws/latest) and used by DoiT customers. Pin a released version, and see [CHANGELOG.md](CHANGELOG.md) for what changed between versions.
 
 ## What it does
 
@@ -75,7 +80,8 @@ Do not pass the DoiT API key to this module. The module uses the configured `doi
 
 ```hcl
 module "doit_cloudconnect" {
-  source = "github.com/doitintl/terraform-aws-doit-cloudconnect"
+  source  = "doitintl/doit-cloudconnect/aws"
+  version = "0.2.0"
 
   external_id = var.doit_external_id # from DoiT Console
   account_id  = "123456789012"
@@ -86,7 +92,8 @@ module "doit_cloudconnect" {
 
 ```hcl
 module "doit_cloudconnect" {
-  source = "github.com/doitintl/terraform-aws-doit-cloudconnect"
+  source  = "doitintl/doit-cloudconnect/aws"
+  version = "0.2.0"
 
   external_id = var.doit_external_id
   account_id  = "123456789012"
@@ -99,7 +106,8 @@ module "doit_cloudconnect" {
 
 ```hcl
 module "doit_cloudconnect" {
-  source = "github.com/doitintl/terraform-aws-doit-cloudconnect"
+  source  = "doitintl/doit-cloudconnect/aws"
+  version = "0.2.0"
 
   external_id = var.doit_external_id
   account_id  = "123456789012"
@@ -121,7 +129,8 @@ Restrict the trust policy to specific IAM roles in the DoiT account instead of t
 
 ```hcl
 module "doit_cloudconnect" {
-  source = "github.com/doitintl/terraform-aws-doit-cloudconnect"
+  source  = "doitintl/doit-cloudconnect/aws"
+  version = "0.2.0"
 
   external_id = var.doit_external_id
   account_id  = "123456789012"
@@ -140,39 +149,86 @@ module "doit_cloudconnect" {
 }
 ```
 
+<!-- BEGIN_TF_DOCS -->
+## Requirements
+
+| Name | Version |
+| ---- | ------- |
+| terraform | >= 1.3 |
+| aws | ~> 6.50 |
+| doit | >= 1.5.0 |
+| time | ~> 0.13 |
+
+## Providers
+
+| Name | Version |
+| ---- | ------- |
+| aws | ~> 6.50 |
+| doit | >= 1.5.0 |
+| time | ~> 0.13 |
+
+## Resources
+
+| Name | Type |
+| ---- | ---- |
+| [aws_iam_openid_connect_provider.concedefy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_openid_connect_provider) | resource |
+| [aws_iam_openid_connect_provider.support_cre](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_openid_connect_provider) | resource |
+| [aws_iam_policy.attribute](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
+| [aws_iam_policy.composer](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
+| [aws_iam_policy.core](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
+| [aws_iam_policy.real_time_data](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
+| [aws_iam_policy.reflex](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
+| [aws_iam_policy.write](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
+| [aws_iam_role.asg_opt](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role.doit_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role.support_diagnostics](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role.support_gateway](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role_policy.asg_opt](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
+| [aws_iam_role_policy.partner_access](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
+| [aws_iam_role_policy.support_gateway_inline](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
+| [aws_iam_role_policy_attachment.attribute](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.aws_managed](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.composer](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.core](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.real_time_data](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.reflex](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.reflex_managed](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.support_diagnostics](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.support_gateway](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.write](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_s3_bucket_notification.real_time_data](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_notification) | resource |
+| [doit_cloudconnect_aws_account.this](https://registry.terraform.io/providers/doitintl/doit/latest/docs/resources/cloudconnect_aws_account) | resource |
+| [time_sleep.iam_propagation](https://registry.terraform.io/providers/hashicorp/time/latest/docs/resources/sleep) | resource |
+
 ## Inputs
 
-| Name                  | Description                                                                                                              | Type               | Default          | Required | Sensitive |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------ | ---------------- | -------- | --------- |
-| `external_id`         | External ID from DoiT Console for trust policy                                                                           | `string`           | —                | yes      | yes       |
-| `account_id`          | Customer AWS Account ID (12 digits)                                                                                      | `string`           | —                | yes      | no        |
-| `doit_account_id`     | DoiT AWS account ID for trust policy                                                                                     | `string`           | `"068664126052"` | no       | no        |
-| `doit_principal_arns` | Restricts the trust policy to these DoiT IAM role ARNs (must be in `doit_account_id`) instead of the account root | `list(string)` | `null` | no | no |
-| `additional_trust_policy_statements` | Extra IAM statements appended to the role trust policy | `any` | `[]` | no | no |
-| `additional_features` | Customer feature names to enable. The module maps them to DoiT backend feature IDs.                                      | `list(string)`     | `[]`             | no       | no        |
-| `feature_config`      | Per-feature configuration map. Real-time anomalies uses the `real-time-data` key with `bucket_name` and `bucket_region`. | `map(map(string))` | `{}`             | no       | no        |
+| Name | Description | Type | Default | Required |
+| ---- | ----------- | ---- | ------- | :------: |
+| account_id | Customer AWS Account ID | `string` | n/a | yes |
+| external_id | External ID from the DoiT Console for the IAM role trust policy | `string` | n/a | yes |
+| additional_features | List of optional DCI features to enable. Customer-facing feature names are mapped to backend feature IDs. 'core' is always included automatically. | `list(string)` | `[]` | no |
+| additional_trust_policy_statements | Extra statements appended to the role trust policy, as IAM policy statement objects. | `any` | `[]` | no |
+| doit_account_id | DoiT AWS account ID for the trust policy principal | `string` | `"068664126052"` | no |
+| doit_principal_arns | Restricts the trust policy to these DoiT IAM principals (e.g. a specific role) instead of the entire doit_account_id root. Must be in doit_account_id. Null keeps the account root. | `list(string)` | `null` | no |
+| expert_advice_concedefy_audience | Audience of the DoiT Concedefy OIDC provider for Expert Advice. Null uses the DoiT production audience. Override only when instructed by DoiT. | `string` | `null` | no |
+| expert_advice_support_oidc_host | Host of the DoiT Support OIDC provider for Expert Advice. Null uses the DoiT production host. Override only when instructed by DoiT. | `string` | `null` | no |
+| feature_config | Per-feature configuration. Required keys depend on the feature. | `map(map(string))` | `{}` | no |
 
 ## Outputs
 
-| Name                              | Description                                                              |
-| --------------------------------- | ------------------------------------------------------------------------ |
-| `role_arn`                        | ARN of the created IAM role                                              |
-| `role_name`                       | Name of the created IAM role                                             |
-| `enabled_features`                | List of enabled features                                                 |
-| `custom_policy_arns`              | Map of policy type to customer-managed policy ARN                        |
-| `aws_managed_policy_arns`         | List of AWS managed policy ARNs attached to the role                     |
-| `support_gateway_role_arn`        | ARN of the DoiT Support Gateway role (null if Expert Advice not enabled) |
-| `cloudconnect_time_linked`        | Timestamp returned by DoiT when the account was linked                   |
-| `cloudconnect_supported_features` | Supported DCI features and permission status returned by DoiT            |
+| Name | Description |
+| ---- | ----------- |
+| aws_managed_policy_arns | List of AWS managed policy ARNs attached to the role |
+| cloudconnect_supported_features | Supported DCI features and permission status returned by DoiT |
+| cloudconnect_time_linked | ISO 8601 timestamp returned by DoiT when the CloudConnect account was linked |
+| custom_policy_arns | Map of policy type to customer-managed policy ARN |
+| enabled_features | List of features enabled for this account |
+| role_arn | ARN of the created IAM role |
+| role_name | Name of the created IAM role |
+| support_gateway_role_arn | ARN of the DoiT Support Gateway role (Expert Advice feature) |
+<!-- END_TF_DOCS -->
 
-## Requirements
-
-| Name          | Version  |
-| ------------- | -------- |
-| Terraform     | >= 1.3   |
-| AWS provider  | ~> 6.50  |
-| DoiT provider | >= 1.5.0 |
-| Time provider | ~> 0.13  |
+## Provider configuration
 
 The root Terraform configuration using this module must configure the DoiT provider. Prefer `DOIT_API_TOKEN` instead of hardcoding the API key:
 
@@ -205,6 +261,53 @@ provider "doit" {
   api_token = var.doit_api_token
 }
 ```
+
+## Examples
+
+- [basic](examples/basic): read-only access, no optional features
+- [complete](examples/complete): every optional feature
+
+## Development
+
+Changes to this module reach customers through the Terraform Registry. Treat inputs, outputs and resource addresses as public API: breaking changes need a `!` in the commit type, and renamed resources need a `moved` block.
+
+### Prerequisites
+
+- [Terraform](https://developer.hashicorp.com/terraform/install) 1.7 or later, for `terraform test`
+- [TFLint](https://github.com/terraform-linters/tflint)
+- [terraform-docs](https://terraform-docs.io/user-guide/installation/)
+- [pre-commit](https://pre-commit.com/#install)
+- [uv](https://docs.astral.sh/uv/), or `python3`, for the policy parity check
+
+### Tests
+
+Run every check that CI runs:
+
+```shell
+scripts/tests/run-all.sh
+```
+
+It checks formatting and validates the module and examples. Then it runs `terraform test`, TFLint and the README docs check, and finally compares the IAM policies with DoiT's CloudFormation member template. `terraform test` uses mock providers, so no AWS or DoiT credentials are needed.
+
+The Requirements, Inputs and Outputs sections of this README, between the `BEGIN_TF_DOCS` and `END_TF_DOCS` markers, are generated. After changing variables or outputs, run `terraform-docs .` instead of editing that block by hand.
+
+### pre-commit
+
+The hooks in [.pre-commit-config.yaml](.pre-commit-config.yaml) run the fast checks on every commit: whitespace and YAML checks, `terraform fmt`, `terraform validate`, and the commit message format. Install them once per clone:
+
+```shell
+pre-commit install --install-hooks
+```
+
+This installs both the `pre-commit` and `commit-msg` hooks. The commit message hook runs [scripts/dev/check-commits.sh](scripts/dev/check-commits.sh), the same script CI uses on pull requests.
+
+### Commit messages
+
+Commits follow [Conventional Commits](https://www.conventionalcommits.org/): `type(optional-scope): description`, with types `feat`, `fix`, `chore`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci` and `revert`. CI checks them on pull requests, because the changelog and the next version number are derived from them.
+
+## Releasing
+
+Releases are cut by tagging `main`. The Terraform Registry publishes every `vX.Y.Z` tag. See [docs/release.md](docs/release.md).
 
 ## License
 

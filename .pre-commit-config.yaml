@@ -1,0 +1,30 @@
+# Fast checks before each commit. scripts/tests/run-all.sh runs every check.
+# Setup: see "Development" in README.md.
+# Hook revisions are pinned to commit SHAs; the comment shows the matching tag.
+default_install_hook_types: [pre-commit, commit-msg]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # v6.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: b9e409b0fee34ee0eee7e6f6a407061f15032926 # v1.109.5
+    hooks:
+      - id: terraform_fmt
+      - id: terraform_validate
+        args: [--hook-config=--retry-once-with-cleanup=true]
+
+  # The same check CI runs on pull requests, applied to each new commit message.
+  - repo: local
+    hooks:
+      - id: conventional-commit
+        name: conventional commit message
+        language: script
+        entry: scripts/dev/check-commits.sh --file
+        stages: [commit-msg]

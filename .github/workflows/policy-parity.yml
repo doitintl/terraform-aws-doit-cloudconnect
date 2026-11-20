@@ -9,6 +9,7 @@ permissions:
 jobs:
   policy-parity:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -27,4 +28,4 @@ jobs:
         run: terraform init -backend=false -input=false
 
       - name: Compare policies with the CloudFormation member template
-        run: scripts/check-policy-parity.sh
+        run: scripts/tests/check-policy-parity.sh

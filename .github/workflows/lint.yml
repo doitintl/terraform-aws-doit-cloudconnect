@@ -1,0 +1,62 @@
+name: Lint
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: terraform-linters/setup-tflint@6ffdbaa3be476b3431f7275c26966ef32ff60337 # v6.3.2
+        with:
+          tflint_version: v0.66.0
+
+      - name: TFLint init
+        env:
+          # Avoids GitHub API rate limits when downloading plugins.
+          GITHUB_TOKEN: ${{ github.token }}
+        run: tflint --init
+
+      - name: TFLint
+        run: tflint --recursive --format compact
+
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TERRAFORM_DOCS_VERSION: v0.25.1
+      # SHA-256 of terraform-docs-<version>-linux-amd64.tar.gz. Update together
+      # with the version, from the release's .sha256sum file.
+      TERRAFORM_DOCS_SHA256: 246f1a3211c9dbbed4c4af82b856dbd40acda78816ac8cdb5203c2869b659c76
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install terraform-docs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd "$RUNNER_TEMP"
+          archive="terraform-docs-${TERRAFORM_DOCS_VERSION}-linux-amd64.tar.gz"
+          gh release download "$TERRAFORM_DOCS_VERSION" --repo terraform-docs/terraform-docs --pattern "$archive"
+          echo "${TERRAFORM_DOCS_SHA256}  ${archive}" | sha256sum --check
+          tar -xzf "$archive" terraform-docs
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+
+      - name: Check README is up to date
+        run: |
+          if ! terraform-docs . --output-check; then
+            echo "::error::README.md is out of date. Run 'terraform-docs .' (or pre-commit) and commit the result."
+            exit 1
+          fi
