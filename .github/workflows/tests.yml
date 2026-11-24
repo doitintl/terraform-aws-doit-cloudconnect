@@ -25,11 +25,16 @@ jobs:
       - name: Terraform fmt
         run: terraform fmt -check -recursive
 
-      - name: Terraform init
-        run: terraform init -backend=false -input=false
-
       - name: Terraform test
-        run: terraform test
+        run: |
+          for dir in . modules/*/; do
+            if compgen -G "${dir}/tests/*.tftest.hcl" >/dev/null; then
+              echo "::group::${dir}"
+              terraform -chdir="$dir" init -backend=false -input=false
+              terraform -chdir="$dir" test
+              echo "::endgroup::"
+            fi
+          done
 
   # Validates the module and examples on the lowest Terraform version that
   # versions.tf allows, and on the version used for development.
@@ -52,7 +57,7 @@ jobs:
 
       - name: Validate module and examples
         run: |
-          for dir in . examples/*/; do
+          for dir in . modules/*/ examples/*/; do
             echo "::group::${dir}"
             terraform -chdir="$dir" init -backend=false -input=false
             terraform -chdir="$dir" validate
