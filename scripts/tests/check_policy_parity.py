@@ -37,7 +37,6 @@ SUBSTITUTIONS = {
 EXCEPTIONS = {
     "composer": "the module grants Composer read access with service-level wildcards",
     "reflex": "the module builds Reflex on AWS-managed job-function policies plus a delta policy",
-    "role managed policies": "the module attaches job-function/Billing instead of AWSBillingReadOnlyAccess",
 }
 
 

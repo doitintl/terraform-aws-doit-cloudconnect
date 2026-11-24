@@ -40,6 +40,14 @@ run "prod_defaults" {
     condition     = jsondecode(aws_iam_role.support_gateway[0].assume_role_policy).Statement[0].Condition.StringEqualsIfExists == { "securetoken.google.com/doit-support:aud" = "doit-support", "support.cre.doit-intl.com:aud" = "123456789012" }
     error_message = "prod trust audiences"
   }
+  assert {
+    condition = toset([for a in aws_iam_role_policy_attachment.aws_managed : a.policy_arn]) == toset([
+      "arn:aws:iam::aws:policy/SecurityAudit",
+      "arn:aws:iam::aws:policy/AWSSavingsPlansReadOnlyAccess",
+      "arn:aws:iam::aws:policy/AWSBillingReadOnlyAccess",
+    ]) && !contains(output.aws_managed_policy_arns, "arn:aws:iam::aws:policy/job-function/Billing")
+    error_message = "core role managed policies must use AWSBillingReadOnlyAccess instead of job-function/Billing"
+  }
 }
 
 run "overrides" {

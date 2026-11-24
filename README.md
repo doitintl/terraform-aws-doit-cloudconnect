@@ -13,7 +13,7 @@ This module is published to the [Terraform Registry](https://registry.terraform.
 - Attaches a **core** read-only managed policy (always present)
 - Attaches a **write** managed policy when write features are selected
 - Attaches feature-specific policies for **Composer**, **RealTimeData**, **Attribute**, and **Expert Advice**
-- Attaches three AWS managed policies: `SecurityAudit`, `AWSSavingsPlansReadOnlyAccess`, `Billing`
+- Attaches three AWS managed policies: `SecurityAudit`, `AWSSavingsPlansReadOnlyAccess`, `AWSBillingReadOnlyAccess`
 - Registers the account with DoiT CloudConnect after AWS resources are in place
 
 ## Supported features
@@ -51,7 +51,7 @@ Leave `Attribute` out of `additional_features` if you don't want to grant these 
 
 IAM limits each role to 10 attached managed policies by default. Selecting every optional feature exceeds that limit. The module attaches:
 
-- always: the core policy plus `SecurityAudit`, `AWSSavingsPlansReadOnlyAccess` and `Billing`
+- always: the core policy plus `SecurityAudit`, `AWSSavingsPlansReadOnlyAccess` and `AWSBillingReadOnlyAccess`
 - one policy each for write features, `Real-time anomalies`, `DCI Composer` and `Attribute`
 - three for `Reflex`: its own policy plus `ViewOnlyAccess` and `AWSSupportAccess`
 
