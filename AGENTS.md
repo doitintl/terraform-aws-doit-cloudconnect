@@ -20,6 +20,7 @@ The module is **public and customer-facing**. It is published to the Terraform R
 | `expert_advice.tf`, `real_time_data.tf`, `spot_scaling.tf` | Resources specific to one feature |
 | `variables.tf`, `outputs.tf`, `versions.tf` | Module interface and version constraints |
 | `tests/*.tftest.hcl` | `terraform test` suites using mock providers; no credentials needed |
+| `modules/cur-export/` | Standalone AWS-only submodule for creating a CUR 2.0 Data Export and optional S3 bucket |
 | `examples/` | Runnable examples, rendered on the Registry module page |
 | `scripts/dev/` | Developer tooling used locally and in CI, such as the commit message check |
 | `scripts/release/` | Release scripts: next version, changelog draft and extraction |
