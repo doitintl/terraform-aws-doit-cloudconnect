@@ -262,10 +262,15 @@ provider "doit" {
 }
 ```
 
+## Submodules
+
+- [cur-export](modules/cur-export): creates an AWS Cost and Usage Report (CUR) 2.0 Data Export (plus optional hardened S3 bucket and bucket policy) for DoiT AWS billing onboarding. AWS provider only; no `doit` provider required.
+
 ## Examples
 
 - [basic](examples/basic): read-only access, no optional features
 - [complete](examples/complete): every optional feature
+- [cur-export](examples/cur-export): standalone AWS CUR 2.0 Data Export and S3 bucket
 
 ## Development
 
