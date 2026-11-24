@@ -430,7 +430,7 @@ locals {
   aws_managed_policy_arns = {
     SecurityAudit                 = "arn:aws:iam::aws:policy/SecurityAudit"
     AWSSavingsPlansReadOnlyAccess = "arn:aws:iam::aws:policy/AWSSavingsPlansReadOnlyAccess"
-    Billing                       = "arn:aws:iam::aws:policy/job-function/Billing"
+    AWSBillingReadOnlyAccess      = "arn:aws:iam::aws:policy/AWSBillingReadOnlyAccess"
   }
 
   # ---------------------------------------------------------
