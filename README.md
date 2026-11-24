@@ -81,7 +81,7 @@ Do not pass the DoiT API key to this module. The module uses the configured `doi
 ```hcl
 module "doit_cloudconnect" {
   source  = "doitintl/doit-cloudconnect/aws"
-  version = "0.2.0"
+  version = "0.2.1"
 
   external_id = var.doit_external_id # from DoiT Console
   account_id  = "123456789012"
@@ -93,7 +93,7 @@ module "doit_cloudconnect" {
 ```hcl
 module "doit_cloudconnect" {
   source  = "doitintl/doit-cloudconnect/aws"
-  version = "0.2.0"
+  version = "0.2.1"
 
   external_id = var.doit_external_id
   account_id  = "123456789012"
@@ -107,7 +107,7 @@ module "doit_cloudconnect" {
 ```hcl
 module "doit_cloudconnect" {
   source  = "doitintl/doit-cloudconnect/aws"
-  version = "0.2.0"
+  version = "0.2.1"
 
   external_id = var.doit_external_id
   account_id  = "123456789012"
@@ -130,7 +130,7 @@ Restrict the trust policy to specific IAM roles in the DoiT account instead of t
 ```hcl
 module "doit_cloudconnect" {
   source  = "doitintl/doit-cloudconnect/aws"
-  version = "0.2.0"
+  version = "0.2.1"
 
   external_id = var.doit_external_id
   account_id  = "123456789012"
