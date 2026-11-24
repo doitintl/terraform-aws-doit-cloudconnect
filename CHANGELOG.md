@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.2.1 (2026-11-24)
+
+**Full diff:** [`v0.2.0...v0.2.1`](../../compare/v0.2.0...v0.2.1)
+
+### Bug Fixes
+
+- fix: aws readonly billing access intead of read-write (`d706849`)
+
+### Chores
+
+- chore(ci): improve ci add timeouts and better structure (`49491e3`)
+- chore: support breaking changes and revert commits (`11f07ae`)
+- chore: add pre-commit hooks pinned to commit hashes (`d1983bc`)
+- chore: add release scripts, workflow and changelog (`3feeaa1`)
+- chore: move policy parity check under scripts/tests (`4d81263`)
+
+### Other Changes
+
+- docs: document registry usage, development, releasing and agent guidance (`aecdb6c`)
+- ci: add tflint, terraform-docs, examples and minimum terraform version checks (`ae4fdc6`)
+- ci: check commit messages follow conventional commits (`3aa8822`)
+
 ## v0.2.0 (2026-11-17)
 
 **Full diff:** [`v0.1.0...v0.2.0`](../../compare/v0.1.0...v0.2.0)
