@@ -29,7 +29,7 @@ This submodule depends only on the `hashicorp/aws` provider — no `doit` provid
 ```hcl
 module "cur_export" {
   source  = "doitintl/doit-cloudconnect/aws//modules/cur-export"
-  version = "~> 0.2"
+  version = "0.3.0"
 
   s3_bucket_name = "my-org-doit-cur2-123456789012"
 }
@@ -58,7 +58,7 @@ resource "aws_s3_bucket_policy" "existing_cur_bucket" {
 
 module "cur_export" {
   source  = "doitintl/doit-cloudconnect/aws//modules/cur-export"
-  version = "~> 0.2"
+  version = "0.3.0"
 
   s3_bucket_name   = "my-existing-cur-bucket"
   create_s3_bucket = false
