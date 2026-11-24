@@ -56,9 +56,7 @@ jobs:
 
       - name: Check README is up to date
         run: |
-          for dir in . modules/*/; do
-            if ! terraform-docs -c .terraform-docs.yml "$dir" --output-check; then
-              echo "::error::${dir%/}/README.md is out of date. Run 'terraform-docs -c .terraform-docs.yml ${dir}' and commit the result."
-              exit 1
-            fi
-          done
+          if ! terraform-docs . --output-check; then
+            echo "::error::README.md is out of date. Run 'terraform-docs .' (or pre-commit) and commit the result."
+            exit 1
+          fi
