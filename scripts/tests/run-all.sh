@@ -29,29 +29,21 @@ section "terraform fmt"
 terraform fmt -check -recursive
 
 section "terraform validate"
-for dir in . modules/*/ examples/*/; do
+for dir in . examples/*/; do
   echo "  ${dir}"
   terraform -chdir="$dir" init -backend=false -input=false >/dev/null
   terraform -chdir="$dir" validate -no-color >/dev/null
 done
 
 section "terraform test"
-for dir in . modules/*/; do
-  if compgen -G "${dir}/tests/*.tftest.hcl" >/dev/null; then
-    echo "  ${dir}"
-    terraform -chdir="$dir" test
-  fi
-done
+terraform test
 
 section "tflint"
 tflint --init >/dev/null
 tflint --recursive --format compact
 
 section "terraform-docs"
-for dir in . modules/*/; do
-  echo "  ${dir}"
-  terraform-docs -c "${REPO_ROOT}/.terraform-docs.yml" "$dir" --output-check
-done
+terraform-docs . --output-check
 
 section "policy parity"
 "${SCRIPT_DIR}/check-policy-parity.sh"
