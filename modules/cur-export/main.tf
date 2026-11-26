@@ -216,7 +216,7 @@ resource "aws_bcmdataexports_export" "this" {
   # and still order export creation after the policy without a module cycle.
   lifecycle {
     precondition {
-      condition     = var.s3_bucket_policy_id == null || length(trimspace(var.s3_bucket_policy_id)) > 0
+      condition     = var.s3_bucket_policy_id == null ? true : length(trimspace(var.s3_bucket_policy_id)) > 0
       error_message = "s3_bucket_policy_id must be null or a non-empty string."
     }
   }

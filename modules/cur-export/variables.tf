@@ -52,7 +52,7 @@ variable "s3_bucket_policy_id" {
   default     = null
 
   validation {
-    condition     = var.s3_bucket_policy_id == null || length(trimspace(var.s3_bucket_policy_id)) > 0
+    condition     = var.s3_bucket_policy_id == null ? true : length(trimspace(var.s3_bucket_policy_id)) > 0
     error_message = "s3_bucket_policy_id must be null or a non-empty string."
   }
 }
@@ -91,7 +91,7 @@ variable "description" {
   default     = "Cost and Usage Report 2.0 export for DoiT Cloud Intelligence"
 
   validation {
-    condition     = var.description == null || length(var.description) <= 1024
+    condition     = var.description == null ? true : length(var.description) <= 1024
     error_message = "description must be 1024 characters or fewer."
   }
 }
