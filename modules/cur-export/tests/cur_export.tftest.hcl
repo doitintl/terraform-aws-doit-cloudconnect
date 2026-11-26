@@ -77,6 +77,17 @@ run "default_creates_bucket_hardening_policy_and_export" {
   }
 
   assert {
+    condition = (
+      length(aws_s3_bucket_lifecycle_configuration.this) == 1 &&
+      aws_s3_bucket_lifecycle_configuration.this[0].rule[0].id == "expire-noncurrent-versions" &&
+      aws_s3_bucket_lifecycle_configuration.this[0].rule[0].status == "Enabled" &&
+      aws_s3_bucket_lifecycle_configuration.this[0].rule[0].noncurrent_version_expiration[0].noncurrent_days == 30 &&
+      aws_s3_bucket_lifecycle_configuration.this[0].rule[0].abort_incomplete_multipart_upload[0].days_after_initiation == 7
+    )
+    error_message = "Expected S3 lifecycle configuration expiring noncurrent versions after 30 days and aborting incomplete multipart uploads after 7 days."
+  }
+
+  assert {
     condition     = length(data.aws_s3_bucket.existing) == 0
     error_message = "Expected existing bucket data source not to be read when create_s3_bucket = true."
   }
@@ -210,6 +221,7 @@ run "existing_bucket_skips_s3_resources_and_policy_by_default" {
       length(aws_s3_bucket_public_access_block.this) == 0 &&
       length(aws_s3_bucket_server_side_encryption_configuration.this) == 0 &&
       length(aws_s3_bucket_versioning.this) == 0 &&
+      length(aws_s3_bucket_lifecycle_configuration.this) == 0 &&
       length(aws_s3_bucket_policy.this) == 0
     )
     error_message = "Expected zero S3 bucket, hardening, or bucket policy resources when create_s3_bucket = false."
@@ -260,6 +272,7 @@ run "existing_bucket_with_managed_policy" {
       length(aws_s3_bucket_public_access_block.this) == 0 &&
       length(aws_s3_bucket_server_side_encryption_configuration.this) == 0 &&
       length(aws_s3_bucket_versioning.this) == 0 &&
+      length(aws_s3_bucket_lifecycle_configuration.this) == 0 &&
       length(aws_s3_bucket_policy.this) == 1 &&
       aws_s3_bucket_policy.this[0].bucket == "existing-cur-bucket" &&
       aws_s3_bucket_policy.this[0].region == "eu-west-1"
@@ -303,11 +316,12 @@ run "new_bucket_with_custom_options_and_external_policy" {
   command = apply
 
   variables {
-    s3_bucket_name          = "test-cur-export-bucket"
-    create_s3_bucket        = true
-    manage_s3_bucket_policy = false
-    s3_bucket_force_destroy = true
-    s3_bucket_region        = "eu-central-1"
+    s3_bucket_name                               = "test-cur-export-bucket"
+    create_s3_bucket                             = true
+    manage_s3_bucket_policy                      = false
+    s3_bucket_force_destroy                      = true
+    s3_bucket_noncurrent_version_expiration_days = 14
+    s3_bucket_region                             = "eu-central-1"
     tags = {
       Environment = "test"
     }
@@ -319,9 +333,10 @@ run "new_bucket_with_custom_options_and_external_policy" {
       aws_s3_bucket.this[0].force_destroy == true &&
       aws_s3_bucket.this[0].region == "eu-central-1" &&
       aws_s3_bucket.this[0].tags == tomap({ Environment = "test" }) &&
+      aws_s3_bucket_lifecycle_configuration.this[0].rule[0].noncurrent_version_expiration[0].noncurrent_days == 14 &&
       aws_bcmdataexports_export.this.tags == tomap({ Environment = "test" }) &&
       length(aws_s3_bucket_policy.this) == 0
     )
-    error_message = "Expected force_destroy, region, tags, and manage_s3_bucket_policy = false to be applied."
+    error_message = "Expected force_destroy, lifecycle retention, region, tags, and manage_s3_bucket_policy = false to be applied."
   }
 }

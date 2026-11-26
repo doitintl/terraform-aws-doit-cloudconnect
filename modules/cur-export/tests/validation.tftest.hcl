@@ -203,3 +203,34 @@ run "s3_bucket_policy_id_whitespace" {
   }
   expect_failures = [var.s3_bucket_policy_id]
 }
+
+run "s3_bucket_noncurrent_version_expiration_days_valid" {
+  command = plan
+  variables {
+    s3_bucket_noncurrent_version_expiration_days = 7
+  }
+}
+
+run "s3_bucket_noncurrent_version_expiration_days_zero" {
+  command = plan
+  variables {
+    s3_bucket_noncurrent_version_expiration_days = 0
+  }
+  expect_failures = [var.s3_bucket_noncurrent_version_expiration_days]
+}
+
+run "s3_bucket_noncurrent_version_expiration_days_negative" {
+  command = plan
+  variables {
+    s3_bucket_noncurrent_version_expiration_days = -5
+  }
+  expect_failures = [var.s3_bucket_noncurrent_version_expiration_days]
+}
+
+run "s3_bucket_noncurrent_version_expiration_days_non_integer" {
+  command = plan
+  variables {
+    s3_bucket_noncurrent_version_expiration_days = 1.5
+  }
+  expect_failures = [var.s3_bucket_noncurrent_version_expiration_days]
+}

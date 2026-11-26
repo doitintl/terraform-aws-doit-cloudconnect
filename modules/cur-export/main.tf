@@ -49,6 +49,8 @@ locals {
       StringEquals = {
         "aws:SourceAccount" = data.aws_caller_identity.current.account_id
       }
+      # AWS BCM Data Exports operates exclusively from us-east-1 in commercial
+      # AWS, so aws:SourceArn always uses us-east-1 regardless of bucket region.
       ArnLike = {
         "aws:SourceArn" = "arn:${data.aws_partition.current.partition}:bcm-data-exports:us-east-1:${data.aws_caller_identity.current.account_id}:export/*"
       }
@@ -149,6 +151,30 @@ resource "aws_s3_bucket_versioning" "this" {
   depends_on = [aws_s3_bucket_server_side_encryption_configuration.this]
 }
 
+resource "aws_s3_bucket_lifecycle_configuration" "this" {
+  count = var.create_s3_bucket ? 1 : 0
+
+  bucket = aws_s3_bucket.this[0].id
+  region = var.s3_bucket_region
+
+  rule {
+    id     = "expire-noncurrent-versions"
+    status = "Enabled"
+
+    filter {}
+
+    noncurrent_version_expiration {
+      noncurrent_days = var.s3_bucket_noncurrent_version_expiration_days
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+
+  depends_on = [aws_s3_bucket_versioning.this]
+}
+
 resource "aws_s3_bucket_policy" "this" {
   count = local.manage_s3_bucket_policy ? 1 : 0
 
@@ -161,6 +187,7 @@ resource "aws_s3_bucket_policy" "this" {
     aws_s3_bucket_public_access_block.this,
     aws_s3_bucket_server_side_encryption_configuration.this,
     aws_s3_bucket_versioning.this,
+    aws_s3_bucket_lifecycle_configuration.this,
   ]
 }
 
@@ -223,6 +250,6 @@ resource "aws_bcmdataexports_export" "this" {
 
   depends_on = [
     aws_s3_bucket_policy.this,
-    aws_s3_bucket_versioning.this,
+    aws_s3_bucket_lifecycle_configuration.this,
   ]
 }

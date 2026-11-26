@@ -35,7 +35,7 @@ variable "s3_prefix" {
 }
 
 variable "create_s3_bucket" {
-  description = "Whether to create and harden a new S3 bucket (BucketOwnerEnforced, public access block, SSE-S3 AES256, versioning). Set to false to deliver exports into an existing bucket."
+  description = "Whether to create and harden a new S3 bucket (BucketOwnerEnforced, public access block, SSE-S3 AES256, versioning with noncurrent-version expiration). Set to false to deliver exports into an existing bucket."
   type        = bool
   default     = true
 }
@@ -83,6 +83,18 @@ variable "s3_bucket_force_destroy" {
   description = "Whether terraform destroy deletes all objects in the created S3 bucket. Only applies when create_s3_bucket is true."
   type        = bool
   default     = false
+}
+
+variable "s3_bucket_noncurrent_version_expiration_days" {
+  description = "Number of days after which noncurrent S3 object versions created by CUR 2.0 report overwrites are expired. Only applies when create_s3_bucket is true."
+  type        = number
+  default     = 30
+  nullable    = false
+
+  validation {
+    condition     = var.s3_bucket_noncurrent_version_expiration_days >= 1 && floor(var.s3_bucket_noncurrent_version_expiration_days) == var.s3_bucket_noncurrent_version_expiration_days
+    error_message = "s3_bucket_noncurrent_version_expiration_days must be a whole number >= 1."
+  }
 }
 
 variable "description" {
