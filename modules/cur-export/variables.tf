@@ -35,15 +35,26 @@ variable "s3_prefix" {
 }
 
 variable "create_s3_bucket" {
-  description = "Whether to create and harden a new S3 bucket (BucketOwnerEnforced, public access block, SSE-S3 AES256). Set to false to deliver exports into an existing bucket."
+  description = "Whether to create and harden a new S3 bucket (BucketOwnerEnforced, public access block, SSE-S3 AES256, versioning). Set to false to deliver exports into an existing bucket."
   type        = bool
   default     = true
 }
 
 variable "manage_s3_bucket_policy" {
-  description = "Whether to manage the S3 bucket policy granting bcm-data-exports.amazonaws.com write access. Defaults to the value of create_s3_bucket so existing bucket policies are never overwritten accidentally."
+  description = "Whether to manage the S3 bucket policy granting bcm-data-exports.amazonaws.com write access and denying non-TLS requests. Defaults to the value of create_s3_bucket so existing bucket policies are never overwritten accidentally."
   type        = bool
   default     = null
+}
+
+variable "s3_bucket_policy_id" {
+  description = "Optional ID of an externally managed aws_s3_bucket_policy resource (for example, aws_s3_bucket_policy.existing.id) when manage_s3_bucket_policy is false. Orders aws_bcmdataexports_export creation after the external bucket policy without creating a module-level dependency cycle."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.s3_bucket_policy_id == null || length(trimspace(var.s3_bucket_policy_id)) > 0
+    error_message = "s3_bucket_policy_id must be null or a non-empty string."
+  }
 }
 
 variable "s3_bucket_region" {

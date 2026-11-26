@@ -180,3 +180,26 @@ run "s3_bucket_region_invalid" {
   }
   expect_failures = [var.s3_bucket_region]
 }
+
+run "s3_bucket_policy_id_valid" {
+  command = plan
+  variables {
+    s3_bucket_policy_id = "existing-cur-bucket"
+  }
+}
+
+run "s3_bucket_policy_id_empty" {
+  command = plan
+  variables {
+    s3_bucket_policy_id = ""
+  }
+  expect_failures = [var.s3_bucket_policy_id]
+}
+
+run "s3_bucket_policy_id_whitespace" {
+  command = plan
+  variables {
+    s3_bucket_policy_id = "   "
+  }
+  expect_failures = [var.s3_bucket_policy_id]
+}

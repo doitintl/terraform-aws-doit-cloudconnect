@@ -11,10 +11,10 @@ This submodule depends only on the `hashicorp/aws` provider — no `doit` provid
   - Granularity and content: `HOURLY`, resource IDs (`INCLUDE_RESOURCES = TRUE`), capacity reservation data (`INCLUDE_CAPACITY_RESERVATION_DATA = TRUE`), and IAM principal data (`INCLUDE_IAM_PRINCIPAL_DATA = TRUE`)
   - Format and delivery: `PARQUET` / `PARQUET` compression, `OVERWRITE_REPORT`, `SYNCHRONOUS` refresh cadence
 - **S3 bucket** (optional, enabled by default via `create_s3_bucket = true`):
-  - `BucketOwnerEnforced` object ownership, all four S3 Public Access Block settings enabled, and SSE-S3 (`AES256`) default encryption (not SSE-KMS, so DoiT's billing role can read reports without `kms:Decrypt`)
+  - `BucketOwnerEnforced` object ownership, all four S3 Public Access Block settings enabled, bucket versioning enabled, and SSE-S3 (`AES256`) default encryption (not SSE-KMS, so DoiT's billing role can read reports without `kms:Decrypt`)
 - **S3 bucket policy** (optional, defaults to `create_s3_bucket`):
-  - Grants `bcm-data-exports.amazonaws.com` `s3:PutObject` and `s3:GetBucketPolicy` scoped to the current account (`aws:SourceAccount` and `aws:SourceArn`)
-  - When `create_s3_bucket = false`, bucket policy management defaults to `false` so existing policies (such as a Legacy CUR `billingreports.amazonaws.com` policy) are never overwritten; use the `s3_bucket_policy_statement_json` output to merge the statement safely.
+  - Grants `bcm-data-exports.amazonaws.com` `s3:PutObject` and `s3:GetBucketPolicy` scoped to the current account (`aws:SourceAccount` and `aws:SourceArn`), and denies non-TLS (`aws:SecureTransport = false`) requests
+  - When `create_s3_bucket = false`, bucket policy management defaults to `false` so existing policies (such as a Legacy CUR `billingreports.amazonaws.com` policy) are never overwritten; use the `s3_bucket_policy_statement_json` output to merge the statement safely and pass the external policy ID via `s3_bucket_policy_id` to order export creation after the policy.
 
 ## Prerequisites
 
@@ -37,7 +37,7 @@ module "cur_export" {
 
 ### Use an existing S3 bucket (for example, one shared with Legacy CUR)
 
-When `create_s3_bucket = false`, `manage_s3_bucket_policy` defaults to `false` so your existing bucket policy is left untouched. AWS validates that `bcm-data-exports.amazonaws.com` can write to the bucket during `CreateExport`, so apply the merged bucket policy before creating the export (for example, using `-target=aws_s3_bucket_policy.existing_cur_bucket` first, then a full `terraform apply`):
+When `create_s3_bucket = false`, `manage_s3_bucket_policy` defaults to `false` so your existing bucket policy is left untouched. AWS validates that `bcm-data-exports.amazonaws.com` can write to the bucket during `CreateExport`. Pass the external `aws_s3_bucket_policy` ID via `s3_bucket_policy_id` so Terraform updates the bucket policy before creating the export in a single `terraform apply` without a dependency cycle:
 
 ```hcl
 data "aws_iam_policy_document" "existing_cur_bucket" {
@@ -60,9 +60,10 @@ module "cur_export" {
   source  = "doitintl/doit-cloudconnect/aws//modules/cur-export"
   version = "0.3.0"
 
-  s3_bucket_name   = "my-existing-cur-bucket"
-  create_s3_bucket = false
-  s3_prefix        = "cur2"
+  s3_bucket_name      = "my-existing-cur-bucket"
+  create_s3_bucket    = false
+  s3_prefix           = "cur2"
+  s3_bucket_policy_id = aws_s3_bucket_policy.existing_cur_bucket.id
 }
 ```
 
@@ -92,6 +93,7 @@ If the existing bucket is dedicated to this export and has no conflicting bucket
 | [aws_s3_bucket_policy.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_policy) | resource |
 | [aws_s3_bucket_public_access_block.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_public_access_block) | resource |
 | [aws_s3_bucket_server_side_encryption_configuration.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_server_side_encryption_configuration) | resource |
+| [aws_s3_bucket_versioning.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_versioning) | resource |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_partition.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/partition) | data source |
 | [aws_s3_bucket.existing](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/s3_bucket) | data source |
@@ -101,12 +103,13 @@ If the existing bucket is dedicated to this export and has no conflicting bucket
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
 | s3_bucket_name | Name of the S3 bucket for CUR 2.0 exports. Created when create_s3_bucket is true; must already exist when false. | `string` | n/a | yes |
-| create_s3_bucket | Whether to create and harden a new S3 bucket (BucketOwnerEnforced, public access block, SSE-S3 AES256). Set to false to deliver exports into an existing bucket. | `bool` | `true` | no |
+| create_s3_bucket | Whether to create and harden a new S3 bucket (BucketOwnerEnforced, public access block, SSE-S3 AES256, versioning). Set to false to deliver exports into an existing bucket. | `bool` | `true` | no |
 | description | Description for the AWS BCM Data Export. | `string` | `"Cost and Usage Report 2.0 export for DoiT Cloud Intelligence"` | no |
 | export_name | Name of the AWS BCM Data Export. | `string` | `"doit-billing-export"` | no |
-| manage_s3_bucket_policy | Whether to manage the S3 bucket policy granting bcm-data-exports.amazonaws.com write access. Defaults to the value of create_s3_bucket so existing bucket policies are never overwritten accidentally. | `bool` | `null` | no |
+| manage_s3_bucket_policy | Whether to manage the S3 bucket policy granting bcm-data-exports.amazonaws.com write access and denying non-TLS requests. Defaults to the value of create_s3_bucket so existing bucket policies are never overwritten accidentally. | `bool` | `null` | no |
 | s3_bucket_force_destroy | Whether terraform destroy deletes all objects in the created S3 bucket. Only applies when create_s3_bucket is true. | `bool` | `false` | no |
 | s3_bucket_owner | 12-digit AWS account ID of the S3 bucket owner for cross-account delivery. Leave null when delivering to a bucket in the current account. | `string` | `null` | no |
+| s3_bucket_policy_id | Optional ID of an externally managed aws_s3_bucket_policy resource (for example, aws_s3_bucket_policy.existing.id) when manage_s3_bucket_policy is false. Orders aws_bcmdataexports_export creation after the external bucket policy without creating a module-level dependency cycle. | `string` | `null` | no |
 | s3_bucket_region | AWS region of the destination S3 bucket. When create_s3_bucket is true, overrides the AWS provider region for the S3 resources. When create_s3_bucket is false, skips the data.aws_s3_bucket lookup (useful for cross-account buckets). | `string` | `null` | no |
 | s3_prefix | S3 key prefix under which CUR 2.0 files are delivered. Defaults to "cur2" to avoid colliding with Legacy CUR reports in shared buckets. | `string` | `"cur2"` | no |
 | tags | Tags to apply to the created S3 bucket (when create_s3_bucket is true) and BCM Data Export. | `map(string)` | `{}` | no |

@@ -72,6 +72,11 @@ run "default_creates_bucket_hardening_policy_and_export" {
   }
 
   assert {
+    condition     = length(aws_s3_bucket_versioning.this) == 1 && aws_s3_bucket_versioning.this[0].versioning_configuration[0].status == "Enabled"
+    error_message = "Expected S3 bucket versioning to be enabled."
+  }
+
+  assert {
     condition     = length(data.aws_s3_bucket.existing) == 0
     error_message = "Expected existing bucket data source not to be read when create_s3_bucket = true."
   }
@@ -84,6 +89,7 @@ run "default_creates_bucket_hardening_policy_and_export" {
 
   assert {
     condition = (
+      length(jsondecode(aws_s3_bucket_policy.this[0].policy).Statement) == 2 &&
       jsondecode(aws_s3_bucket_policy.this[0].policy).Statement[0].Principal.Service == "bcm-data-exports.amazonaws.com" &&
       toset(jsondecode(aws_s3_bucket_policy.this[0].policy).Statement[0].Action) == toset(["s3:PutObject", "s3:GetBucketPolicy"]) &&
       toset(jsondecode(aws_s3_bucket_policy.this[0].policy).Statement[0].Resource) == toset([
@@ -91,9 +97,18 @@ run "default_creates_bucket_hardening_policy_and_export" {
         "arn:aws:s3:::test-cur-export-bucket/*",
       ]) &&
       jsondecode(aws_s3_bucket_policy.this[0].policy).Statement[0].Condition.StringEquals["aws:SourceAccount"] == "123456789012" &&
-      jsondecode(aws_s3_bucket_policy.this[0].policy).Statement[0].Condition.ArnLike["aws:SourceArn"] == "arn:aws:bcm-data-exports:us-east-1:123456789012:export/*"
+      jsondecode(aws_s3_bucket_policy.this[0].policy).Statement[0].Condition.ArnLike["aws:SourceArn"] == "arn:aws:bcm-data-exports:us-east-1:123456789012:export/*" &&
+      jsondecode(aws_s3_bucket_policy.this[0].policy).Statement[1].Sid == "DenyInsecureTransport" &&
+      jsondecode(aws_s3_bucket_policy.this[0].policy).Statement[1].Effect == "Deny" &&
+      jsondecode(aws_s3_bucket_policy.this[0].policy).Statement[1].Principal == "*" &&
+      jsondecode(aws_s3_bucket_policy.this[0].policy).Statement[1].Action == "s3:*" &&
+      toset(jsondecode(aws_s3_bucket_policy.this[0].policy).Statement[1].Resource) == toset([
+        "arn:aws:s3:::test-cur-export-bucket",
+        "arn:aws:s3:::test-cur-export-bucket/*",
+      ]) &&
+      jsondecode(aws_s3_bucket_policy.this[0].policy).Statement[1].Condition.Bool["aws:SecureTransport"] == "false"
     )
-    error_message = "S3 bucket policy does not match BCM Data Exports requirements."
+    error_message = "S3 bucket policy must include both BCM Data Exports permissions and a TLS-only deny statement."
   }
 
   # BCM Data Export configuration
@@ -183,8 +198,9 @@ run "existing_bucket_skips_s3_resources_and_policy_by_default" {
   command = apply
 
   variables {
-    s3_bucket_name   = "existing-cur-bucket"
-    create_s3_bucket = false
+    s3_bucket_name      = "existing-cur-bucket"
+    create_s3_bucket    = false
+    s3_bucket_policy_id = "existing-cur-bucket"
   }
 
   assert {
@@ -193,6 +209,7 @@ run "existing_bucket_skips_s3_resources_and_policy_by_default" {
       length(aws_s3_bucket_ownership_controls.this) == 0 &&
       length(aws_s3_bucket_public_access_block.this) == 0 &&
       length(aws_s3_bucket_server_side_encryption_configuration.this) == 0 &&
+      length(aws_s3_bucket_versioning.this) == 0 &&
       length(aws_s3_bucket_policy.this) == 0
     )
     error_message = "Expected zero S3 bucket, hardening, or bucket policy resources when create_s3_bucket = false."
@@ -215,13 +232,15 @@ run "existing_bucket_skips_s3_resources_and_policy_by_default" {
 
   assert {
     condition = (
+      length(jsondecode(output.s3_bucket_policy_statement_json).Statement) == 1 &&
+      jsondecode(output.s3_bucket_policy_statement_json).Statement[0].Sid == "AllowDataExportsToWriteAndCheckPolicy" &&
       jsondecode(output.s3_bucket_policy_statement_json).Statement[0].Principal.Service == "bcm-data-exports.amazonaws.com" &&
       toset(jsondecode(output.s3_bucket_policy_statement_json).Statement[0].Resource) == toset([
         "arn:aws:s3:::existing-cur-bucket",
         "arn:aws:s3:::existing-cur-bucket/*",
       ])
     )
-    error_message = "Expected s3_bucket_policy_statement_json output to contain valid bucket policy JSON for merging."
+    error_message = "Expected s3_bucket_policy_statement_json output to contain only the BCM Data Exports statement for merging."
   }
 }
 
@@ -240,6 +259,7 @@ run "existing_bucket_with_managed_policy" {
       length(aws_s3_bucket_ownership_controls.this) == 0 &&
       length(aws_s3_bucket_public_access_block.this) == 0 &&
       length(aws_s3_bucket_server_side_encryption_configuration.this) == 0 &&
+      length(aws_s3_bucket_versioning.this) == 0 &&
       length(aws_s3_bucket_policy.this) == 1 &&
       aws_s3_bucket_policy.this[0].bucket == "existing-cur-bucket" &&
       aws_s3_bucket_policy.this[0].region == "eu-west-1"

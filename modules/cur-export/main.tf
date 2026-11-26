@@ -31,29 +31,51 @@ locals {
 
   s3_bucket_policy_region = var.create_s3_bucket ? var.s3_bucket_region : local.s3_bucket_region
 
+  s3_bucket_export_policy_statement = {
+    Sid    = "AllowDataExportsToWriteAndCheckPolicy"
+    Effect = "Allow"
+    Principal = {
+      Service = "bcm-data-exports.amazonaws.com"
+    }
+    Action = [
+      "s3:PutObject",
+      "s3:GetBucketPolicy",
+    ]
+    Resource = [
+      local.s3_bucket_arn,
+      "${local.s3_bucket_arn}/*",
+    ]
+    Condition = {
+      StringEquals = {
+        "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+      }
+      ArnLike = {
+        "aws:SourceArn" = "arn:${data.aws_partition.current.partition}:bcm-data-exports:us-east-1:${data.aws_caller_identity.current.account_id}:export/*"
+      }
+    }
+  }
+
+  s3_bucket_policy_statement_json = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [local.s3_bucket_export_policy_statement]
+  })
+
   s3_bucket_policy_json = jsonencode({
     Version = "2012-10-17"
     Statement = [
+      local.s3_bucket_export_policy_statement,
       {
-        Sid    = "AllowDataExportsToWriteAndCheckPolicy"
-        Effect = "Allow"
-        Principal = {
-          Service = "bcm-data-exports.amazonaws.com"
-        }
-        Action = [
-          "s3:PutObject",
-          "s3:GetBucketPolicy",
-        ]
+        Sid       = "DenyInsecureTransport"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:*"
         Resource = [
           local.s3_bucket_arn,
           "${local.s3_bucket_arn}/*",
         ]
         Condition = {
-          StringEquals = {
-            "aws:SourceAccount" = data.aws_caller_identity.current.account_id
-          }
-          ArnLike = {
-            "aws:SourceArn" = "arn:${data.aws_partition.current.partition}:bcm-data-exports:us-east-1:${data.aws_caller_identity.current.account_id}:export/*"
+          Bool = {
+            "aws:SecureTransport" = "false"
           }
         }
       },
@@ -70,6 +92,8 @@ resource "aws_s3_bucket" "this" {
   tags          = var.tags
 }
 
+# S3 serializes per-bucket configuration mutations; chain bucket settings to
+# prevent intermittent OperationAborted errors on first apply.
 resource "aws_s3_bucket_ownership_controls" "this" {
   count = var.create_s3_bucket ? 1 : 0
 
@@ -91,6 +115,8 @@ resource "aws_s3_bucket_public_access_block" "this" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+
+  depends_on = [aws_s3_bucket_ownership_controls.this]
 }
 
 # SSE-S3 (AES256) rather than SSE-KMS: DoiT's billing role reads CUR objects
@@ -106,6 +132,21 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
       sse_algorithm = "AES256"
     }
   }
+
+  depends_on = [aws_s3_bucket_public_access_block.this]
+}
+
+resource "aws_s3_bucket_versioning" "this" {
+  count = var.create_s3_bucket ? 1 : 0
+
+  bucket = aws_s3_bucket.this[0].id
+  region = var.s3_bucket_region
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+
+  depends_on = [aws_s3_bucket_server_side_encryption_configuration.this]
 }
 
 resource "aws_s3_bucket_policy" "this" {
@@ -114,6 +155,13 @@ resource "aws_s3_bucket_policy" "this" {
   bucket = local.s3_bucket_name
   region = local.s3_bucket_policy_region
   policy = local.s3_bucket_policy_json
+
+  depends_on = [
+    aws_s3_bucket_ownership_controls.this,
+    aws_s3_bucket_public_access_block.this,
+    aws_s3_bucket_server_side_encryption_configuration.this,
+    aws_s3_bucket_versioning.this,
+  ]
 }
 
 resource "aws_bcmdataexports_export" "this" {
@@ -163,5 +211,18 @@ resource "aws_bcmdataexports_export" "this" {
 
   tags = var.tags
 
-  depends_on = [aws_s3_bucket_policy.this]
+  # Reference var.s3_bucket_policy_id on the export resource only so callers
+  # managing their own bucket policy can consume s3_bucket_policy_statement_json
+  # and still order export creation after the policy without a module cycle.
+  lifecycle {
+    precondition {
+      condition     = var.s3_bucket_policy_id == null || length(trimspace(var.s3_bucket_policy_id)) > 0
+      error_message = "s3_bucket_policy_id must be null or a non-empty string."
+    }
+  }
+
+  depends_on = [
+    aws_s3_bucket_policy.this,
+    aws_s3_bucket_versioning.this,
+  ]
 }

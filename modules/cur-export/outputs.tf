@@ -35,5 +35,5 @@ output "cur_path" {
 
 output "s3_bucket_policy_statement_json" {
   description = "IAM policy document JSON granting bcm-data-exports.amazonaws.com write and policy-check permissions on the bucket. Pass to aws_iam_policy_document.source_policy_documents when merging into an existing bucket policy."
-  value       = local.s3_bucket_policy_json
+  value       = local.s3_bucket_policy_statement_json
 }
